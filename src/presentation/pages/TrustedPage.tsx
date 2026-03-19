@@ -77,7 +77,7 @@ export default function TrustedPage() {
       <Paper sx={{ borderRadius:2, overflow:"hidden" }}>
         <Box sx={{ p:2, borderBottom:`1px solid ${theme.palette.divider}` }}>
           <Typography variant="subtitle1" fontWeight={600}>Quality Gates</Typography>
-          <Typography variant="caption" color="text.secondary">Verificacoes de qualidade nas fronteiras Ingestion -> Trusted -> Analytics</Typography>
+          <Typography variant="caption" color="text.secondary">Verificacoes de qualidade nas fronteiras Ingestion {'=>'} Trusted {'=>'} Analytics</Typography>
         </Box>
         <TableContainer>
           <Table size="small">

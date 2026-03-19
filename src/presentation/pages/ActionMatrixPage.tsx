@@ -74,7 +74,7 @@ export default function ActionMatrixPage() {
       <Paper sx={{ borderRadius:2, overflow:"hidden" }}>
         <Box sx={{ p:2, borderBottom:`1px solid ${theme.palette.divider}` }}>
           <Typography variant="subtitle1" fontWeight={600}>Regras de Acionamento</Typography>
-          <Typography variant="caption" color="text.secondary">Anomalia detectada -> acao automatica -> notificacao</Typography>
+          <Typography variant="caption" color="text.secondary">Anomalia detectada {'=>'} Acao automatica {'=>'} Notificacao</Typography>
         </Box>
         <TableContainer>
           <Table size="small">
