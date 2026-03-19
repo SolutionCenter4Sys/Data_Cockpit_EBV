@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import type { Theme } from "@mui/material/styles";
 import {
   Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText,
   Typography, Divider, Chip, useTheme,
@@ -52,7 +53,7 @@ interface NavSectionProps {
   criticalAlerts: number;
   location: { pathname: string };
   navigate: (path: string) => void;
-  theme: ReturnType<typeof useTheme>;
+  theme: Theme;
 }
 
 function NavSection({ title, items, criticalAlerts, location, navigate, theme }: NavSectionProps) {

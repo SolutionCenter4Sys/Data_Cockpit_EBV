@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import {
-  Box, Grid, Typography, Chip, Paper, Divider, List, ListItem,
-  Alert as MuiAlert, Card, CardContent, useTheme, LinearProgress,
+  Box, Grid, Typography, Chip, Paper, Divider,
+  Alert as MuiAlert, useTheme, LinearProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import LinkIcon from "@mui/icons-material/Link";
