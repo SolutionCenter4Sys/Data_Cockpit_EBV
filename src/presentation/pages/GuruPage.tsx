@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import type { ReactElement } from "react";
 import {
   Box, Grid, Typography, Chip, Paper, Divider,
   List, ListItem, Alert as MuiAlert, Card, CardContent, useTheme,
@@ -17,7 +18,7 @@ import type { TrendType, AnalysisStatus } from "../../app/slices/guruSlice";
 import KpiCard from "../components/KpiCard";
 import PageSkeleton from "../components/PageSkeleton";
 
-const TREND_ICON: Record<TrendType, JSX.Element> = {
+const TREND_ICON: Record<TrendType, ReactElement> = {
   worsening: <TrendingDownIcon fontSize="small" />,
   improving: <TrendingUpIcon fontSize="small" />,
   stable: <TrendingFlatIcon fontSize="small" />,
