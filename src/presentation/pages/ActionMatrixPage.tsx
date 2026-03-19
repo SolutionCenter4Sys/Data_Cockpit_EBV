@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import type { ReactElement } from "react";
 import {
   Box, Grid, Typography, Chip, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, useTheme,
@@ -10,11 +11,12 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import EscalatorWarningIcon from "@mui/icons-material/EscalatorWarning";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import { useAppDispatch, useAppSelector } from "../../app/store";
-import { fetchActionRules, ActionType, TriggerStatus } from "../../app/slices/actionMatrixSlice";
+import { fetchActionRules } from "../../app/slices/actionMatrixSlice";
+import type { ActionType, TriggerStatus } from "../../app/slices/actionMatrixSlice";
 import KpiCard from "../components/KpiCard";
 import PageSkeleton from "../components/PageSkeleton";
 
-const ACTION_ICONS: Record<ActionType, JSX.Element> = {
+const ACTION_ICONS: Record<ActionType, ReactElement> = {
   block: <BlockIcon fontSize="small" />,
   notify: <NotificationsIcon fontSize="small" />,
   retry: <ReplayIcon fontSize="small" />,
