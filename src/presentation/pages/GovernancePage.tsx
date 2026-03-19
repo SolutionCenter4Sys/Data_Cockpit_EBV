@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import {
   Box, Grid, Typography, Chip, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Paper, Divider, useTheme,
+  TableContainer, TableHead, TableRow, Paper, useTheme,
 } from "@mui/material";
 import GavelIcon from "@mui/icons-material/Gavel";
 import BlockIcon from "@mui/icons-material/Block";
