@@ -14,6 +14,12 @@ import GuardiaoPage from "./presentation/pages/GuardiaoPage";
 import DetetivePage from "./presentation/pages/DetetivePage";
 import AuditorPage from "./presentation/pages/AuditorPage";
 import GuruPage from "./presentation/pages/GuruPage";
+import AnalyticsExpandidoPage from "./presentation/pages/AnalyticsExpandidoPage";
+import SmartAlertsPage from "./presentation/pages/SmartAlertsPage";
+import PreditivoPage from "./presentation/pages/PreditivoPage";
+import ConselheiroPage from "./presentation/pages/ConselheiroPage";
+import ComunicadorPage from "./presentation/pages/ComunicadorPage";
+import ParkingLotPage from "./presentation/pages/ParkingLotPage";
 
 export default function App() {
   return (
@@ -34,6 +40,12 @@ export default function App() {
         <Route path="/detetive" element={<DetetivePage />} />
         <Route path="/auditor" element={<AuditorPage />} />
         <Route path="/guru" element={<GuruPage />} />
+        <Route path="/analytics-expandido" element={<AnalyticsExpandidoPage />} />
+        <Route path="/smart-alerts" element={<SmartAlertsPage />} />
+        <Route path="/preditivoia" element={<PreditivoPage />} />
+        <Route path="/conselheiro" element={<ConselheiroPage />} />
+        <Route path="/comunicador" element={<ComunicadorPage />} />
+        <Route path="/parking-lot" element={<ParkingLotPage />} />
       </Route>
     </Routes>
   );

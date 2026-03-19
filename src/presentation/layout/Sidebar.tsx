@@ -18,6 +18,12 @@ import ShieldIcon from "@mui/icons-material/Shield";
 import SearchIcon from "@mui/icons-material/Search";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import AnalyticsIcon from "@mui/icons-material/Analytics";
+import PsychologyIcon from "@mui/icons-material/Psychology";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import ForumIcon from "@mui/icons-material/Forum";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import ScienceIcon from "@mui/icons-material/Science";
 import { useAppSelector } from "../../app/store";
 
 const SIDEBAR_WIDTH = 256;
@@ -29,20 +35,28 @@ const mvpItems = [
   { path:"/batch",      label:"Batch Monitor",   icon:<StorageIcon fontSize="small" /> },
   { path:"/lineage",    label:"Rastreabilidade", icon:<AccountTreeIcon fontSize="small" /> },
 ];
-
 const fase2Items = [
   { path:"/ingestion",     label:"Ingestion",        icon:<InputIcon fontSize="small" /> },
   { path:"/trusted",       label:"Trusted",          icon:<VerifiedUserIcon fontSize="small" /> },
   { path:"/action-matrix", label:"Matriz de Acao",   icon:<PlaylistAddCheckIcon fontSize="small" /> },
   { path:"/governance",    label:"Governanca",       icon:<GavelIcon fontSize="small" /> },
 ];
-
+const fase3Items = [
+  { path:"/analytics-expandido", label:"Analytics 1000+",    icon:<AnalyticsIcon fontSize="small" /> },
+  { path:"/smart-alerts",        label:"Alertas IA",         icon:<PsychologyIcon fontSize="small" /> },
+  { path:"/preditivoia",         label:"IA Preditiva",       icon:<TrendingUpIcon fontSize="small" /> },
+];
 const agentItems = [
-  { path:"/sentinela", label:"AG-01 Sentinela",  icon:<RadarIcon fontSize="small" />,     wsjf:"12.0" },
-  { path:"/guardiao",  label:"AG-06 Guardiao",   icon:<ShieldIcon fontSize="small" />,    wsjf:"9.2" },
-  { path:"/detetive",  label:"AG-02 Detetive",   icon:<SearchIcon fontSize="small" />,    wsjf:"6.6" },
-  { path:"/auditor",   label:"AG-07 Auditor",    icon:<AssessmentIcon fontSize="small" />,wsjf:"5.1" },
-  { path:"/guru",      label:"AG-03 Guru",       icon:<AutoAwesomeIcon fontSize="small" />,wsjf:"3.7" },
+  { path:"/sentinela",  label:"AG-01 Sentinela",   icon:<RadarIcon fontSize="small" />,        wsjf:"12.0" },
+  { path:"/guardiao",   label:"AG-06 Guardiao",    icon:<ShieldIcon fontSize="small" />,       wsjf:"9.2" },
+  { path:"/detetive",   label:"AG-02 Detetive",    icon:<SearchIcon fontSize="small" />,       wsjf:"6.6" },
+  { path:"/auditor",    label:"AG-07 Auditor",     icon:<AssessmentIcon fontSize="small" />,   wsjf:"5.1" },
+  { path:"/guru",       label:"AG-03 Guru",        icon:<AutoAwesomeIcon fontSize="small" />,  wsjf:"3.7" },
+  { path:"/conselheiro",label:"AG-08 Conselheiro", icon:<AccessTimeIcon fontSize="small" />,   wsjf:"3.9" },
+  { path:"/comunicador",label:"AG-04 Comunicador", icon:<ForumIcon fontSize="small" />,        wsjf:"3.3" },
+];
+const parkingItems = [
+  { path:"/parking-lot", label:"AG-05 + AG-09 (Planejado)", icon:<ScienceIcon fontSize="small" /> },
 ];
 
 interface NavItem { path: string; label: string; icon: React.ReactElement; badge?: boolean; wsjf?: string; }
@@ -128,7 +142,6 @@ export default function Sidebar() {
         overflowX:"hidden",
       },
     }}>
-      {/* Brand */}
       <Box sx={{ p:2, pb:1.5 }}>
         <Box sx={{ display:"flex", alignItems:"center", gap:1 }}>
           <Box sx={{ width:30, height:30, borderRadius:1.5, flexShrink:0,
@@ -152,19 +165,19 @@ export default function Sidebar() {
 
       <List dense sx={{ pt:0.5, pb:1, flex:1, overflowY:"auto", overflowX:"hidden" }}>
         <NavSection title="MVP" items={mvpItems} criticalAlerts={criticalAlerts} location={location} navigate={navigate} theme={theme} />
-        <Box sx={{ my:0.5 }}>
-          <Divider sx={{ borderColor: isLight ? "rgba(0,47,108,0.06)" : "rgba(255,255,255,0.04)" }} />
-        </Box>
+        <Box sx={{ my:0.5 }}><Divider sx={{ borderColor: isLight ? "rgba(0,47,108,0.06)" : "rgba(255,255,255,0.04)" }} /></Box>
         <NavSection title="Fase 2 — Camadas" items={fase2Items} criticalAlerts={0} location={location} navigate={navigate} theme={theme} />
-        <Box sx={{ my:0.5 }}>
-          <Divider sx={{ borderColor: isLight ? "rgba(0,47,108,0.06)" : "rgba(255,255,255,0.04)" }} />
-        </Box>
+        <Box sx={{ my:0.5 }}><Divider sx={{ borderColor: isLight ? "rgba(0,47,108,0.06)" : "rgba(255,255,255,0.04)" }} /></Box>
+        <NavSection title="Fase 3 — Inteligencia IA" items={fase3Items} criticalAlerts={0} location={location} navigate={navigate} theme={theme} />
+        <Box sx={{ my:0.5 }}><Divider sx={{ borderColor: isLight ? "rgba(0,47,108,0.06)" : "rgba(255,255,255,0.04)" }} /></Box>
         <NavSection title="Agentes 4CO (WSJF)" items={agentItems} criticalAlerts={0} location={location} navigate={navigate} theme={theme} />
+        <Box sx={{ my:0.5 }}><Divider sx={{ borderColor: isLight ? "rgba(0,47,108,0.06)" : "rgba(255,255,255,0.04)" }} /></Box>
+        <NavSection title="Parking Lot" items={parkingItems} criticalAlerts={0} location={location} navigate={navigate} theme={theme} />
       </List>
 
       <Box sx={{ p:1.5, borderTop:`1px solid ${borderColor}` }}>
-        <Typography variant="caption" color="text.disabled" display="block" sx={{ fontSize:"0.65rem" }}>Cockpit EBV v1.2 — 4CO Fase 2</Typography>
-        <Typography variant="caption" color="text.disabled" sx={{ fontSize:"0.65rem" }}>Foursys 2026</Typography>
+        <Typography variant="caption" color="text.disabled" display="block" sx={{ fontSize:"0.65rem" }}>Cockpit EBV v2.0 — Fase 3 Completa</Typography>
+        <Typography variant="caption" color="text.disabled" sx={{ fontSize:"0.65rem" }}>Foursys 4CO 2026</Typography>
       </Box>
     </Drawer>
   );

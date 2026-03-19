@@ -14,6 +14,11 @@ import guardiaoReducer from "./slices/guardiaoSlice";
 import detetivoReducer from "./slices/detetivoSlice";
 import auditorReducer from "./slices/auditorSlice";
 import guruReducer from "./slices/guruSlice";
+import analyticsExpandidoReducer from "./slices/analyticsExpandidoSlice";
+import smartAlertsReducer from "./slices/smartAlertsSlice";
+import predictivoReducer from "./slices/predictivoSlice";
+import conselheiroReducer from "./slices/conselheiroSlice";
+import comunicadorReducer from "./slices/comunicadorSlice";
 
 export const store = configureStore({
   reducer: {
@@ -31,6 +36,11 @@ export const store = configureStore({
     detetivo: detetivoReducer,
     auditor: auditorReducer,
     guru: guruReducer,
+    analyticsExpandido: analyticsExpandidoReducer,
+    smartAlerts: smartAlertsReducer,
+    preditivoIA: predictivoReducer,
+    conselheiro: conselheiroReducer,
+    comunicador: comunicadorReducer,
   },
 });
 
