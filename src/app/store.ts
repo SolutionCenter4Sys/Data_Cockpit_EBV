@@ -10,6 +10,10 @@ import trustedReducer from "./slices/trustedSlice";
 import actionMatrixReducer from "./slices/actionMatrixSlice";
 import governanceReducer from "./slices/governanceSlice";
 import sentinelaReducer from "./slices/sentinelaSlice";
+import guardiaoReducer from "./slices/guardiaoSlice";
+import detetivoReducer from "./slices/detetivoSlice";
+import auditorReducer from "./slices/auditorSlice";
+import guruReducer from "./slices/guruSlice";
 
 export const store = configureStore({
   reducer: {
@@ -23,6 +27,10 @@ export const store = configureStore({
     actionMatrix: actionMatrixReducer,
     governance: governanceReducer,
     sentinela: sentinelaReducer,
+    guardiao: guardiaoReducer,
+    detetivo: detetivoReducer,
+    auditor: auditorReducer,
+    guru: guruReducer,
   },
 });
 

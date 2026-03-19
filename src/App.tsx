@@ -10,6 +10,10 @@ import TrustedPage from "./presentation/pages/TrustedPage";
 import ActionMatrixPage from "./presentation/pages/ActionMatrixPage";
 import GovernancePage from "./presentation/pages/GovernancePage";
 import SentinelaPage from "./presentation/pages/SentinelaPage";
+import GuardiaoPage from "./presentation/pages/GuardiaoPage";
+import DetetivePage from "./presentation/pages/DetetivePage";
+import AuditorPage from "./presentation/pages/AuditorPage";
+import GuruPage from "./presentation/pages/GuruPage";
 
 export default function App() {
   return (
@@ -26,6 +30,10 @@ export default function App() {
         <Route path="/action-matrix" element={<ActionMatrixPage />} />
         <Route path="/governance" element={<GovernancePage />} />
         <Route path="/sentinela" element={<SentinelaPage />} />
+        <Route path="/guardiao" element={<GuardiaoPage />} />
+        <Route path="/detetive" element={<DetetivePage />} />
+        <Route path="/auditor" element={<AuditorPage />} />
+        <Route path="/guru" element={<GuruPage />} />
       </Route>
     </Routes>
   );
