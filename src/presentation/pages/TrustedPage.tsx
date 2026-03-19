@@ -35,7 +35,7 @@ export default function TrustedPage() {
   const theme = useTheme();
   const { checks, loading } = useAppSelector((s) => s.trusted);
   useEffect(() => { dispatch(fetchTrustedChecks()); }, [dispatch]);
-  if (loading && checks.length === 0) return <PageSkeleton title="Monitoramento de Trusted" />;
+  if (loading && checks.length === 0) return <PageSkeleton />;
 
   const pass = checks.filter(c => c.status === "pass").length;
   const fail = checks.filter(c => c.status === "fail").length;
@@ -64,13 +64,13 @@ export default function TrustedPage() {
           <KpiCard label="Checks Passando" value={pass} trend="UP" trendValue={`${pass}/${checks.length}`} severity="HEALTHY" />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Checks Falhando" value={fail} trend={fail > 0 ? "DOWN" : "FLAT"} trendValue={`${fail} gates`} severity={fail > 0 ? "CRITICAL" : "HEALTHY"} />
+          <KpiCard label="Checks Falhando" value={fail} trend={fail > 0 ? "DOWN" : "STABLE"} trendValue={`${fail} gates`} severity={fail > 0 ? "CRITICAL" : "HEALTHY"} />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Com Alertas" value={warn} trend="FLAT" trendValue={`${warn} warnings`} severity={warn > 0 ? "HIGH" : "HEALTHY"} />
+          <KpiCard label="Com Alertas" value={warn} trend="STABLE" trendValue={`${warn} warnings`} severity={warn > 0 ? "HIGH" : "HEALTHY"} />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Pass Rate Medio" value={`${avgPassRate.toFixed(1)}%`} trend="FLAT" trendValue="media ponderada" severity={avgPassRate > 95 ? "HEALTHY" : avgPassRate > 85 ? "MEDIUM" : "HIGH"} />
+          <KpiCard label="Pass Rate Medio" value={`${avgPassRate.toFixed(1)}%`} trend="STABLE" trendValue="media ponderada" severity={avgPassRate > 95 ? "HEALTHY" : avgPassRate > 85 ? "MEDIUM" : "HIGH"} />
         </Grid>
       </Grid>
 

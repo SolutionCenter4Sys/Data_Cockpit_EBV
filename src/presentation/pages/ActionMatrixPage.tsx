@@ -39,7 +39,7 @@ export default function ActionMatrixPage() {
   const theme = useTheme();
   const { rules, loading } = useAppSelector((s) => s.actionMatrix);
   useEffect(() => { dispatch(fetchActionRules()); }, [dispatch]);
-  if (loading && rules.length === 0) return <PageSkeleton title="Matriz de Acionamento" />;
+  if (loading && rules.length === 0) return <PageSkeleton />;
 
   const triggered = rules.filter(r => r.status === "triggered").length;
   const withBlock = rules.filter(r => r.autoBlocking).length;
@@ -58,13 +58,13 @@ export default function ActionMatrixPage() {
 
       <Grid container spacing={2} mb={3}>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Regras Ativas" value={rules.filter(r => r.status !== "inactive").length} trend="FLAT" trendValue={`${rules.length} total`} severity="HEALTHY" />
+          <KpiCard label="Regras Ativas" value={rules.filter(r => r.status !== "inactive").length} trend="STABLE" trendValue={`${rules.length} total`} severity="HEALTHY" />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Disparadas Agora" value={triggered} trend={triggered > 0 ? "DOWN" : "FLAT"} trendValue={`${triggered} em acao`} severity={triggered > 0 ? "CRITICAL" : "HEALTHY"} />
+          <KpiCard label="Disparadas Agora" value={triggered} trend={triggered > 0 ? "DOWN" : "STABLE"} trendValue={`${triggered} em acao`} severity={triggered > 0 ? "CRITICAL" : "HEALTHY"} />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Com Bloqueio Auto" value={withBlock} trend="FLAT" trendValue={`${withBlock} regras`} severity="HIGH" />
+          <KpiCard label="Com Bloqueio Auto" value={withBlock} trend="STABLE" trendValue={`${withBlock} regras`} severity="HIGH" />
         </Grid>
         <Grid item xs={6} sm={3}>
           <KpiCard label="Total de Disparos" value={totalTriggers} trend="UP" trendValue="historico" severity="MEDIUM" />

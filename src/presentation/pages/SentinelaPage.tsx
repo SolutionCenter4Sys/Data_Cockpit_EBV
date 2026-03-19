@@ -30,7 +30,7 @@ export default function SentinelaPage() {
   const theme = useTheme();
   const { signals, noiseReduction, anomalyCount, baselineLearned, monitoredSources, signalQuality, loading } = useAppSelector((s) => s.sentinela);
   useEffect(() => { dispatch(fetchSentinelaData()); }, [dispatch]);
-  if (loading && signals.length === 0) return <PageSkeleton title="AG-01 Sentinela" />;
+  if (loading && signals.length === 0) return <PageSkeleton />;
 
   const statusItems: StatusItem[] = [
     { icon:<WifiIcon />, title:"Ingestao Sensorial", desc:"Conectado a 6 sources de ingestion, 1 trusted, 1 batch", ok:true },
@@ -66,13 +66,13 @@ export default function SentinelaPage() {
           <KpiCard label="Reducao de Ruido" value={`${noiseReduction}%`} trend="UP" trendValue="meta: 95%" severity={noiseReduction >= 90 ? "HEALTHY" : "HIGH"} />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Anomalias Detectadas" value={anomalyCount} trend={anomalyCount > 2 ? "DOWN" : "FLAT"} trendValue="para o Detetive" severity={anomalyCount > 3 ? "CRITICAL" : anomalyCount > 1 ? "HIGH" : "HEALTHY"} />
+          <KpiCard label="Anomalias Detectadas" value={anomalyCount} trend={anomalyCount > 2 ? "DOWN" : "STABLE"} trendValue="para o Detetive" severity={anomalyCount > 3 ? "CRITICAL" : anomalyCount > 1 ? "HIGH" : "HEALTHY"} />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Sources Monitorados" value={monitoredSources} trend="FLAT" trendValue="todas as camadas" severity="HEALTHY" />
+          <KpiCard label="Sources Monitorados" value={monitoredSources} trend="STABLE" trendValue="todas as camadas" severity="HEALTHY" />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Qualidade de Sinal" value={`${signalQuality}%`} trend={signalQuality > 80 ? "UP" : "FLAT"} trendValue={baselineLearned ? "baseline OK" : "aprendendo..."} severity={signalQuality >= 80 ? "HEALTHY" : "MEDIUM"} />
+          <KpiCard label="Qualidade de Sinal" value={`${signalQuality}%`} trend={signalQuality > 80 ? "UP" : "STABLE"} trendValue={baselineLearned ? "baseline OK" : "aprendendo..."} severity={signalQuality >= 80 ? "HEALTHY" : "MEDIUM"} />
         </Grid>
       </Grid>
 

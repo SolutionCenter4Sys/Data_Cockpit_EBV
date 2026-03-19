@@ -25,7 +25,7 @@ export default function IngestionPage() {
   const theme = useTheme();
   const { sources, loading } = useAppSelector((s) => s.ingestion);
   useEffect(() => { dispatch(fetchIngestionSources()); }, [dispatch]);
-  if (loading && sources.length === 0) return <PageSkeleton title="Monitoramento de Ingestion" />;
+  if (loading && sources.length === 0) return <PageSkeleton />;
 
   const ok = sources.filter(s => s.status === "ok").length;
   const err = sources.filter(s => s.status === "error").length;
@@ -52,13 +52,13 @@ export default function IngestionPage() {
 
       <Grid container spacing={2} mb={3}>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Sources Totais" value={sources.length} trend="FLAT" trendValue="+0" severity="HEALTHY" />
+          <KpiCard label="Sources Totais" value={sources.length} trend="STABLE" trendValue="+0" severity="HEALTHY" />
         </Grid>
         <Grid item xs={6} sm={3}>
           <KpiCard label="Operacionais" value={ok} trend="UP" trendValue={`${ok}/${sources.length}`} severity="HEALTHY" />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Com Problemas" value={warn + err} trend={err > 0 ? "DOWN" : "FLAT"} trendValue={`${warn} alerta · ${err} erro`} severity={err > 0 ? "CRITICAL" : warn > 0 ? "HIGH" : "HEALTHY"} />
+          <KpiCard label="Com Problemas" value={warn + err} trend={err > 0 ? "DOWN" : "STABLE"} trendValue={`${warn} alerta · ${err} erro`} severity={err > 0 ? "CRITICAL" : warn > 0 ? "HIGH" : "HEALTHY"} />
         </Grid>
         <Grid item xs={6} sm={3}>
           <KpiCard label="Registros/Ciclo" value={totalRec.toLocaleString("pt-BR")} trend="UP" trendValue={`${totalErr} erros`} severity="MEDIUM" />

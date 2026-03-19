@@ -29,7 +29,7 @@ export default function GovernancePage() {
   const theme = useTheme();
   const { rules, blockedProcesses, loading } = useAppSelector((s) => s.governance);
   useEffect(() => { dispatch(fetchGovernanceData()); }, [dispatch]);
-  if (loading && rules.length === 0) return <PageSkeleton title="Governanca e Regras de Bloqueio" />;
+  if (loading && rules.length === 0) return <PageSkeleton />;
 
   const blocked = blockedProcesses.filter(p => p.status === "blocked" || p.status === "under_review").length;
   const activeRules = rules.filter(r => r.status === "active").length;
@@ -48,13 +48,13 @@ export default function GovernancePage() {
 
       <Grid container spacing={2} mb={3}>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Regras Ativas" value={activeRules} trend="FLAT" trendValue={`${rules.length} total`} severity="HEALTHY" />
+          <KpiCard label="Regras Ativas" value={activeRules} trend="STABLE" trendValue={`${rules.length} total`} severity="HEALTHY" />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Processos Bloqueados" value={blocked} trend={blocked > 0 ? "DOWN" : "FLAT"} trendValue={`${blocked} ativos`} severity={blocked > 1 ? "CRITICAL" : blocked === 1 ? "HIGH" : "HEALTHY"} />
+          <KpiCard label="Processos Bloqueados" value={blocked} trend={blocked > 0 ? "DOWN" : "STABLE"} trendValue={`${blocked} ativos`} severity={blocked > 1 ? "CRITICAL" : blocked === 1 ? "HIGH" : "HEALTHY"} />
         </Grid>
         <Grid item xs={6} sm={3}>
-          <KpiCard label="Regras em Rascunho" value={rules.filter(r => r.status === "draft").length} trend="FLAT" trendValue="aguardando ativacao" severity="LOW" />
+          <KpiCard label="Regras em Rascunho" value={rules.filter(r => r.status === "draft").length} trend="STABLE" trendValue="aguardando ativacao" severity="LOW" />
         </Grid>
         <Grid item xs={6} sm={3}>
           <KpiCard label="Total de Acionamentos" value={totalTriggers} trend="UP" trendValue="historico completo" severity="MEDIUM" />
