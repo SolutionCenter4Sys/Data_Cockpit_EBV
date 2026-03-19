@@ -1,0 +1,71 @@
+=== Cockpit EBV Git Push — 2026-03-19 15:13:06 ===
+
+>>> git init -b main
+Initialized empty Git repository in C:/Cursor_Codigo/Cockpit Monitoramento e Dados/Frontend/.git/
+
+[exit=0]
+
+>>> git remote remove origin
+error: No such remote: 'origin'
+
+[exit=2]
+
+>>> git remote add origin https://github.com/SolutionCenter4Sys/Data_Cockpit_EBV.git
+
+[exit=0]
+
+>>> git fetch origin main --depth=1
+From https://github.com/SolutionCenter4Sys/Data_Cockpit_EBV
+ * branch            main       -> FETCH_HEAD
+ * [new branch]      main       -> origin/main
+
+[exit=0]
+
+>>> git reset origin/main
+Unstaged changes after reset:
+D	.gitattributes
+M	.github/workflows/azure-static-web-apps-gentle-forest-0142c430f.yml
+D	.gitignore
+D	README.md
+D	index.html
+D	iniciar-cockpit.bat
+D	package.json
+D	src/App.tsx
+D	src/ThemeToggleContext.tsx
+D	src/app/slices/alertSlice.ts
+D	src/app/slices/batchSlice.ts
+D	src/app/slices/dashboardSlice.ts
+D	src/app/slices/lineageSlice.ts
+D	src/app/slices/scoreSlice.ts
+D	src/app/store.ts
+D	src/data/mock/mockData.ts
+D	src/data/repositories/MockAlertRepository.ts
+D	src/data/repositories/MockBatchRepository.ts
+D	src/data/repositories/MockDashboardRepository.ts
+D	src/data/repositories/MockLineageRepository.ts
+D	src/data/repositories/MockScoreRepository.ts
+D	src/domain/entities/index.ts
+D	src/domain/repositories/interfaces.ts
+D	src/main.tsx
+D	src/presentation/components/HealthRing.tsx
+D	src/presentation/components/KpiCard.tsx
+D	src/presentation/components/PageSkeleton.tsx
+D	src/presentation/components/SeverityChip.tsx
+D	src/presentation/components/StatusBadge.tsx
+D	src/presentation/layout/AppLayout.tsx
+D	src/presentation/layout/Sidebar.tsx
+D	src/presentation/layout/TopBar.tsx
+D	src/presentation/pages/AlertsPage.tsx
+D	src/presentation/pages/BatchMonitorPage.tsx
+D	src/presentation/pages/DashboardPage.tsx
+D	src/presentation/pages/LineagePage.tsx
+D	src/presentation/pages/ScoreMonitorPage.tsx
+D	src/theme.ts
+D	src/themeLight.ts
+D	tsconfig.json
+D	tsconfig.node.json
+D	vite.config.ts
+
+[exit=0]
+
+>>> git add -A
