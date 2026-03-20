@@ -1,129 +1,127 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Box, Grid, Card, CardContent, Typography, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Chip, LinearProgress,
-  Alert, useTheme,
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  LinearProgress,
+  Alert,
+  useTheme,
+  Stack,
+  TextField,
+  Button,
+  Slider,
+  Divider,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import DownloadIcon from '@mui/icons-material/Download';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { fetchPipelineRuns, fetchPipelineDetail, clearSelected } from '../../app/slices/lineageSlice';
 import StatusBadge from '../components/StatusBadge';
 import PageSkeleton from '../components/PageSkeleton';
-import type { PipelineRun, LineageNode } from '../../domain/entities';
+import type { PipelineRun, LineageNode, LineageEdge, DataLayer } from '../../domain/entities';
 
 const LAYER_LABELS: Record<string, string> = {
   INGESTION: 'Ingestão', TRUSTED: 'Trusted', ANALYTICS: 'Analytics',
 };
 const LAYER_ORDER = ['INGESTION', 'TRUSTED', 'ANALYTICS'];
 
-function LayerNodes({ nodes, layer, isLight }: { nodes: LineageNode[]; layer: string; isLight: boolean }) {
-  const theme = useTheme();
-  const layerColor =
-    layer === 'INGESTION' ? theme.palette.secondary.main
-    : layer === 'TRUSTED' ? theme.palette.primary.main
-    : '#F5A623';
-
-  const flowBg = isLight ? 'rgba(0,47,108,0.04)' : 'rgba(255,255,255,0.03)';
-  const flowBorder = isLight ? 'rgba(0,47,108,0.10)' : 'rgba(255,255,255,0.06)';
-
-  return (
-    <Box sx={{ flex: 1, minWidth: 160, p: 2.5, borderRadius: 2,
-      backgroundColor: flowBg, border: `1px solid ${flowBorder}`,
-      borderTop: `3px solid ${layerColor}` }}>
-      <Typography variant="overline" sx={{ color: layerColor, display: 'block', mb: 1.5 }}>
-        {LAYER_LABELS[layer]}
-      </Typography>
-      {nodes.length === 0 ? (
-        <Typography variant="caption" sx={{ color: theme.palette.text.disabled }}>Sem nós</Typography>
-      ) : (
-        nodes.map((node) => (
-          <Box key={node.id} sx={{ mb: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
-                {node.name}
-              </Typography>
-              <StatusBadge status={node.status} showDot />
-            </Box>
-            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block' }}>
-              {node.type}
-            </Typography>
-            {node.recordCount !== undefined && (
-              <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: 'block' }}>
-                {node.recordCount.toLocaleString('pt-BR')} registros
-              </Typography>
-            )}
-          </Box>
-        ))
-      )}
-    </Box>
-  );
+interface PositionedNode {
+  node: LineageNode;
+  x: number;
+  y: number;
 }
 
-function RunDetail({ run }: { run: PipelineRun }) {
-  const theme = useTheme();
-  const isLight = theme.palette.mode === 'light';
-  const arrowColor = isLight ? 'rgba(0,47,108,0.25)' : 'rgba(255,255,255,0.2)';
-  const completionPct = run.stepsTotal > 0 ? (run.stepsCompleted / run.stepsTotal) * 100 : 0;
-  const completionColor =
-    run.stepsFailled > 0 ? theme.palette.error.main
-    : completionPct === 100 ? theme.palette.success.main
-    : theme.palette.warning.main;
-
-  return (
-    <Card sx={{ mb: 2 }}>
-      <CardContent sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-          <Box>
-            <Typography variant="h5">{run.pipelineName}</Typography>
-            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontFamily: 'monospace' }}>
-              {run.runId}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="overline" sx={{ color: theme.palette.text.secondary }}>Passos</Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                <span style={{ color: theme.palette.success.main }}>{run.stepsCompleted}</span>
-                {' / '}{run.stepsTotal}
-                {run.stepsFailled > 0 && (
-                  <span style={{ color: theme.palette.error.main }}> ({run.stepsFailled} falha)</span>
-                )}
-              </Typography>
-            </Box>
-            <StatusBadge status={run.status} />
-          </Box>
-        </Box>
-
-        <LinearProgress
-          variant="determinate"
-          value={completionPct}
-          sx={{ mb: 3, height: 6, borderRadius: 3,
-            '& .MuiLinearProgress-bar': { backgroundColor: completionColor } }}
-        />
-
-        {run.nodes.length > 0 && (
-          <>
-            <Typography variant="h6" sx={{ mb: 1.5 }}>Grafo de Lineage</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'stretch', gap: 0, overflowX: 'auto', pb: 2 }}>
-              {LAYER_ORDER.map((layer, i) => {
-                const layerNodes = run.nodes.filter((n) => n.layer === layer);
-                return (
-                  <Box key={layer} sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                    <LayerNodes nodes={layerNodes} layer={layer} isLight={isLight} />
-                    {i < LAYER_ORDER.length - 1 && (
-                      <Box sx={{ px: 1, flexShrink: 0, color: arrowColor, fontSize: '1.5rem', lineHeight: 1 }}>
-                        →
-                      </Box>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
+interface TraceStep {
+  order: number;
+  nodeName: string;
+  layer: DataLayer;
+  status: string;
+  timestamp: string;
+  detail: string;
 }
+
+const LAYER_INDEX: Record<DataLayer, number> = {
+  INGESTION: 0,
+  TRUSTED: 1,
+  ANALYTICS: 2,
+};
+
+const getStatusColor = (status: string, isLight: boolean): string => {
+  if (status === 'SUCCESS') return isLight ? '#00873D' : '#10B981';
+  if (status === 'RUNNING') return '#3399FF';
+  if (status === 'FAILED') return '#E31837';
+  if (status === 'WARNING') return '#F5A623';
+  return '#6B7280';
+};
+
+const getLayerColor = (layer: DataLayer): string => {
+  if (layer === 'INGESTION') return '#0066CC';
+  if (layer === 'TRUSTED') return '#E31837';
+  return '#F5A623';
+};
+
+const downloadTextFile = (filename: string, content: string, mimeType: string): void => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+};
+
+const buildPositions = (nodes: LineageNode[]): PositionedNode[] => {
+  const layerBuckets = nodes.reduce<Record<DataLayer, LineageNode[]>>(
+    (acc, node) => {
+      acc[node.layer].push(node);
+      return acc;
+    },
+    { INGESTION: [], TRUSTED: [], ANALYTICS: [] }
+  );
+
+  return (['INGESTION', 'TRUSTED', 'ANALYTICS'] as DataLayer[]).flatMap((layer) => {
+    return layerBuckets[layer].map((node, index) => ({
+      node,
+      x: 60 + LAYER_INDEX[layer] * 330,
+      y: 50 + index * 92,
+    }));
+  });
+};
+
+const findPosition = (positions: PositionedNode[], nodeId: string): PositionedNode | undefined =>
+  positions.find((item) => item.node.id === nodeId);
+
+const buildTrace = (identifier: string, run: PipelineRun | null): TraceStep[] => {
+  if (!run || !identifier.trim()) return [];
+  if (identifier.toLowerCase().includes('nao')) return [];
+
+  const sortedNodes = [...run.nodes].sort((a, b) => {
+    const layerDiff = LAYER_INDEX[a.layer] - LAYER_INDEX[b.layer];
+    if (layerDiff !== 0) return layerDiff;
+    return a.name.localeCompare(b.name);
+  });
+
+  return sortedNodes.map((node, index) => ({
+    order: index + 1,
+    nodeName: node.name,
+    layer: node.layer,
+    status: node.status,
+    timestamp: node.lastUpdated || run.startTime,
+    detail: `${identifier} passou por ${node.type} (${node.status})`,
+  }));
+};
 
 export default function LineagePage() {
   const dispatch = useAppDispatch();
@@ -131,26 +129,149 @@ export default function LineagePage() {
   const isLight = theme.palette.mode === 'light';
   const { runs, selectedRun, loading } = useAppSelector((s) => s.lineage);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string>('');
+  const [zoom, setZoom] = useState(1);
+  const [traceIdentifier, setTraceIdentifier] = useState('');
+  const [traceResult, setTraceResult] = useState<TraceStep[]>([]);
 
   useEffect(() => {
     dispatch(fetchPipelineRuns());
     return () => { dispatch(clearSelected()); };
   }, [dispatch]);
 
+  useEffect(() => {
+    if (!selectedRun) {
+      setSelectedNodeId('');
+      return;
+    }
+    if (!selectedNodeId || !selectedRun.nodes.some((node) => node.id === selectedNodeId)) {
+      setSelectedNodeId(selectedRun.nodes[0]?.id ?? '');
+    }
+  }, [selectedRun, selectedNodeId]);
+
   const handleSelectRun = (runId: string) => {
     if (selectedId === runId) {
       setSelectedId(null);
       dispatch(clearSelected());
+      setTraceResult([]);
+      setTraceIdentifier('');
     } else {
       setSelectedId(runId);
       dispatch(fetchPipelineDetail(runId));
+      setTraceResult([]);
     }
   };
 
   const failedRuns = runs.filter((r) => r.status === 'FAILED');
   const chipBg = isLight ? 'rgba(0,47,108,0.06)' : 'rgba(255,255,255,0.06)';
 
+  const positionedNodes = useMemo(
+    () => (selectedRun ? buildPositions(selectedRun.nodes) : []),
+    [selectedRun]
+  );
+
+  const selectedNode = useMemo(
+    () => selectedRun?.nodes.find((node) => node.id === selectedNodeId) ?? null,
+    [selectedRun, selectedNodeId]
+  );
+
   if (loading && runs.length === 0) return <PageSkeleton />;
+
+  const runCompletionPct = selectedRun && selectedRun.stepsTotal > 0
+    ? (selectedRun.stepsCompleted / selectedRun.stepsTotal) * 100
+    : 0;
+
+  const runCompletionColor = !selectedRun
+    ? theme.palette.info.main
+    : selectedRun.stepsFailled > 0
+      ? theme.palette.error.main
+      : runCompletionPct === 100
+        ? theme.palette.success.main
+        : theme.palette.warning.main;
+
+  const handleTraceSearch = (): void => {
+    setTraceResult(buildTrace(traceIdentifier, selectedRun));
+  };
+
+  const handleExportSvg = (): void => {
+    const svg = document.getElementById('lineage-dag-svg');
+    if (!svg) return;
+    const serialized = new XMLSerializer().serializeToString(svg);
+    downloadTextFile('lineage-dag.svg', serialized, 'image/svg+xml;charset=utf-8;');
+  };
+
+  const handleExportTraceCsv = (): void => {
+    if (traceResult.length === 0) return;
+    const rows = [
+      'ordem;node;camada;status;timestamp;detalhe',
+      ...traceResult.map((step) =>
+        [
+          step.order,
+          step.nodeName,
+          step.layer,
+          step.status,
+          step.timestamp,
+          step.detail.replace(/;/g, ','),
+        ].join(';')
+      ),
+    ];
+    downloadTextFile(`lineage-trace-${Date.now()}.csv`, rows.join('\n'), 'text/csv;charset=utf-8;');
+  };
+
+  const handleExportAuditPdf = (): void => {
+    if (traceResult.length === 0) return;
+    const popup = window.open('', '_blank', 'width=1024,height=768');
+    if (!popup) return;
+
+    const html = `
+      <html>
+      <head>
+        <title>Auditoria Lineage</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 24px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+          th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+          th { background: #f3f3f3; text-align: left; }
+          h1 { font-size: 20px; margin-bottom: 6px; }
+          .meta { color: #666; font-size: 12px; margin-bottom: 12px; }
+        </style>
+      </head>
+      <body>
+        <h1>Relatório de Auditoria de Lineage</h1>
+        <div class="meta">
+          Pipeline: ${selectedRun?.pipelineName ?? '-'} | Run: ${selectedRun?.runId ?? '-'} | Identificador: ${traceIdentifier}
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Ordem</th><th>Nó</th><th>Camada</th><th>Status</th><th>Timestamp</th><th>Detalhe</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${traceResult
+              .map(
+                (step) => `
+                  <tr>
+                    <td>${step.order}</td>
+                    <td>${step.nodeName}</td>
+                    <td>${step.layer}</td>
+                    <td>${step.status}</td>
+                    <td>${new Date(step.timestamp).toLocaleString('pt-BR')}</td>
+                    <td>${step.detail}</td>
+                  </tr>`
+              )
+              .join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    popup.document.write(html);
+    popup.document.close();
+    popup.focus();
+    popup.print();
+  };
 
   return (
     <Box>
@@ -179,7 +300,231 @@ export default function LineagePage() {
         ))}
       </Grid>
 
-      {selectedRun && selectedId && <RunDetail run={selectedRun} />}
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ p: 2.5 }}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1.5}
+            alignItems={{ xs: 'stretch', md: 'center' }}
+            justifyContent="space-between"
+          >
+            <Stack direction="row" spacing={1.2} alignItems="center" sx={{ width: '100%' }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Rastrear identificador (CPF/ID)"
+                value={traceIdentifier}
+                onChange={(event) => setTraceIdentifier(event.target.value)}
+                placeholder="Ex: CPF-12345678900"
+              />
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<SearchIcon fontSize="small" />}
+                onClick={handleTraceSearch}
+                disabled={!selectedRun}
+              >
+                Rastrear
+              </Button>
+            </Stack>
+
+            <Stack direction="row" spacing={1}>
+              <Button size="small" startIcon={<DownloadIcon fontSize="small" />} onClick={handleExportSvg} disabled={!selectedRun}>
+                SVG
+              </Button>
+              <Button size="small" startIcon={<FileDownloadOutlinedIcon fontSize="small" />} onClick={handleExportTraceCsv} disabled={traceResult.length === 0}>
+                CSV
+              </Button>
+              <Button size="small" variant="contained" onClick={handleExportAuditPdf} disabled={traceResult.length === 0}>
+                PDF auditoria
+              </Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {selectedRun && selectedId && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent sx={{ p: 2.5 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} sx={{ mb: 1.5 }}>
+              <Box>
+                <Typography variant="h5">{selectedRun.pipelineName}</Typography>
+                <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontFamily: 'monospace' }}>
+                  {selectedRun.runId}
+                </Typography>
+              </Box>
+              <Box sx={{ minWidth: 220 }}>
+                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                  Zoom DAG: {(zoom * 100).toFixed(0)}%
+                </Typography>
+                <Slider
+                  size="small"
+                  min={0.8}
+                  max={1.6}
+                  step={0.05}
+                  value={zoom}
+                  onChange={(_, value) => {
+                    if (typeof value === 'number') setZoom(value);
+                  }}
+                />
+              </Box>
+            </Stack>
+
+            <LinearProgress
+              variant="determinate"
+              value={runCompletionPct}
+              sx={{ mb: 2.2, height: 6, borderRadius: 3, '& .MuiLinearProgress-bar': { backgroundColor: runCompletionColor } }}
+            />
+
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={8}>
+                <Box sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, p: 1, overflow: 'auto' }}>
+                  <svg id="lineage-dag-svg" width={1080} height={420} role="img" aria-label="DAG de lineage">
+                    <g transform={`scale(${zoom})`}>
+                      {LAYER_ORDER.map((layer, index) => (
+                        <text
+                          key={layer}
+                          x={70 + index * 330}
+                          y={22}
+                          fill={getLayerColor(layer as DataLayer)}
+                          style={{ fontSize: '12px', fontWeight: 700 }}
+                        >
+                          {LAYER_LABELS[layer]}
+                        </text>
+                      ))}
+
+                      {selectedRun.edges.map((edge: LineageEdge) => {
+                        const source = findPosition(positionedNodes, edge.sourceId);
+                        const target = findPosition(positionedNodes, edge.targetId);
+                        if (!source || !target) return null;
+                        const color = getStatusColor(edge.status, isLight);
+
+                        return (
+                          <line
+                            key={edge.id}
+                            x1={source.x + 220}
+                            y1={source.y + 26}
+                            x2={target.x}
+                            y2={target.y + 26}
+                            stroke={color}
+                            strokeWidth={2}
+                            opacity={0.9}
+                          />
+                        );
+                      })}
+
+                      {positionedNodes.map((item) => {
+                        const isSelected = item.node.id === selectedNodeId;
+                        const color = getStatusColor(item.node.status, isLight);
+                        return (
+                          <g
+                            key={item.node.id}
+                            transform={`translate(${item.x}, ${item.y})`}
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => setSelectedNodeId(item.node.id)}
+                          >
+                            <rect
+                              width={220}
+                              height={52}
+                              rx={8}
+                              fill={isSelected ? `${color}26` : `${color}14`}
+                              stroke={color}
+                              strokeWidth={isSelected ? 2.2 : 1.3}
+                            />
+                            <text x={10} y={20} fill={theme.palette.text.primary} style={{ fontSize: '11px', fontWeight: 700 }}>
+                              {item.node.name}
+                            </text>
+                            <text x={10} y={36} fill={theme.palette.text.secondary} style={{ fontSize: '10px' }}>
+                              {item.node.type} · {item.node.recordCount?.toLocaleString('pt-BR') ?? '--'} registros
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </g>
+                  </svg>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined">
+                  <CardContent sx={{ p: 2 }}>
+                    <Typography variant="subtitle1" sx={{ mb: 0.8 }}>Detalhes do nó selecionado</Typography>
+                    {selectedNode ? (
+                      <>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{selectedNode.name}</Typography>
+                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block' }}>
+                          {selectedNode.type} · {LAYER_LABELS[selectedNode.layer]}
+                        </Typography>
+                        <Box sx={{ mt: 1 }}>
+                          <StatusBadge status={selectedNode.status} />
+                        </Box>
+                        <Divider sx={{ my: 1.2 }} />
+                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block' }}>
+                          Última atualização: {selectedNode.lastUpdated ? new Date(selectedNode.lastUpdated).toLocaleString('pt-BR') : '--'}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block' }}>
+                          Volume processado: {selectedNode.recordCount?.toLocaleString('pt-BR') ?? '--'}
+                        </Typography>
+                      </>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                        Selecione um nó no DAG para visualizar detalhes.
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {traceIdentifier.trim().length > 0 && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent sx={{ p: 2.5 }}>
+            <Typography variant="h6" sx={{ mb: 0.8 }}>
+              Trilha de rastreabilidade
+            </Typography>
+            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 1.5 }}>
+              Identificador: {traceIdentifier}
+            </Typography>
+
+            {traceResult.length === 0 ? (
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                Nenhuma trilha encontrada para o identificador informado.
+              </Typography>
+            ) : (
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Ordem</TableCell>
+                    <TableCell>Nó</TableCell>
+                    <TableCell>Camada</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Timestamp</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {traceResult.map((step) => (
+                    <TableRow key={`${step.order}-${step.nodeName}`}>
+                      <TableCell>{step.order}</TableCell>
+                      <TableCell>
+                        <Typography variant="caption" sx={{ fontWeight: 700 }}>{step.nodeName}</Typography>
+                        <Typography variant="caption" sx={{ display: 'block', color: theme.palette.text.secondary }}>
+                          {step.detail}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{LAYER_LABELS[step.layer]}</TableCell>
+                      <TableCell>{step.status}</TableCell>
+                      <TableCell>{new Date(step.timestamp).toLocaleString('pt-BR')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent sx={{ p: 2.5 }}>

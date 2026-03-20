@@ -2,6 +2,7 @@ import { Card, CardContent, Box, Typography, useTheme } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import type { TrendDirection, SeverityLevel } from '../../domain/entities';
 
 const SEVERITY_COLOR: Record<SeverityLevel, string> = {
@@ -27,6 +28,7 @@ interface KpiCardProps {
   trend: TrendDirection;
   trendValue: string;
   severity: SeverityLevel;
+  trendPreview?: Array<{ label: string; value: number }>;
 }
 
 const TrendIcon = ({ direction }: { direction: TrendDirection }) => {
@@ -35,7 +37,15 @@ const TrendIcon = ({ direction }: { direction: TrendDirection }) => {
   return <TrendingFlatIcon sx={{ fontSize: 16 }} />;
 };
 
-export default function KpiCard({ label, value, unit, trend, trendValue, severity }: KpiCardProps) {
+export default function KpiCard({
+  label,
+  value,
+  unit,
+  trend,
+  trendValue,
+  severity,
+  trendPreview,
+}: KpiCardProps) {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
   const color = SEVERITY_COLOR[severity];
@@ -86,6 +96,23 @@ export default function KpiCard({ label, value, unit, trend, trendValue, severit
             vs. ontem
           </Typography>
         </Box>
+
+        {trendPreview && trendPreview.length > 1 && (
+          <Box sx={{ mt: 1.2, height: 40 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendPreview}>
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke={color}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Box>
+        )}
       </CardContent>
     </Card>
   );
