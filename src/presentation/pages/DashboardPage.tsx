@@ -26,21 +26,37 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
   Legend,
+  Cell,
 } from 'recharts';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { fetchDashboard } from '../../app/slices/dashboardSlice';
 import KpiCard from '../components/KpiCard';
 import HealthRing from '../components/HealthRing';
 import PageSkeleton from '../components/PageSkeleton';
-import type { LayerHealth, DataLayer, GlobalHealthKpi } from '../../domain/entities';
+import type { LayerHealth, DataLayer, GlobalHealthKpi, SlaMetric, RoiMetric } from '../../domain/entities';
 
 type DashboardPeriod = '1H' | '4H' | '24H' | '7D' | '30D';
 type LayerFilter = 'ALL' | DataLayer;
+
+const MOCK_SLA: SlaMetric[] = [
+  { layer: 'INGESTION', target: 99.5, actual: 99.2, trend: 'STABLE' },
+  { layer: 'TRUSTED', target: 99.0, actual: 97.8, trend: 'DOWN' },
+  { layer: 'ANALYTICS', target: 99.9, actual: 99.95, trend: 'UP' },
+];
+
+const MOCK_ROI: RoiMetric[] = [
+  { label: 'SLA Uptime', value: 99.3, unit: '%', trend: 'STABLE' },
+  { label: 'MTTR', value: 23, unit: 'min', trend: 'UP' },
+  { label: 'Custo Incidentes', value: 12400, unit: 'R$/mês', trend: 'DOWN' },
+  { label: 'ROI Plataforma', value: 340, unit: '%', trend: 'UP' },
+];
 
 interface TrendPoint {
   label: string;
@@ -593,6 +609,59 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </Box>
           )}
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mt: 2 }}>
+        <CardContent sx={{ p: 2.5 }}>
+          <Typography variant="h6" sx={{ mb: 0.5 }}>SLA & ROI</Typography>
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 2 }}>
+            Indicadores de nível de serviço e retorno sobre investimento da plataforma
+          </Typography>
+
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            {MOCK_ROI.map((roi) => (
+              <Grid item xs={6} sm={3} key={roi.label}>
+                <KpiCard
+                  label={roi.label}
+                  value={typeof roi.value === 'number' && roi.value > 999 ? `${(roi.value / 1000).toFixed(1)}k` : roi.value}
+                  unit={roi.unit}
+                  trend={roi.trend}
+                  trendValue={roi.unit}
+                  severity={roi.trend === 'DOWN' && roi.label.includes('Custo') ? 'HEALTHY' : roi.trend === 'UP' ? 'HEALTHY' : 'MEDIUM'}
+                />
+              </Grid>
+            ))}
+          </Grid>
+
+          <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Cumprimento de SLA por Camada</Typography>
+          <Box sx={{ height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={MOCK_SLA.map((s) => ({
+                layer: s.layer === 'INGESTION' ? 'Ingestão' : s.layer === 'TRUSTED' ? 'Trusted' : 'Analytics',
+                Meta: s.target,
+                Real: s.actual,
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                <XAxis dataKey="layer" tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                <YAxis domain={[95, 100]} tick={{ fill: theme.palette.text.secondary, fontSize: 11 }} />
+                <RechartsTooltip
+                  contentStyle={{
+                    backgroundColor: theme.palette.background.paper,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 8,
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="Meta" fill={theme.palette.text.disabled} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Real" radius={[4, 4, 0, 0]}>
+                  {MOCK_SLA.map((s, i) => (
+                    <Cell key={i} fill={s.actual >= s.target ? theme.palette.success.main : theme.palette.error.main} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </Box>
         </CardContent>
       </Card>
     </Box>

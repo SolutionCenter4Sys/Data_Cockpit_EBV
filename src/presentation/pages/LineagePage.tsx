@@ -28,12 +28,24 @@ import { useAppDispatch, useAppSelector } from '../../app/store';
 import { fetchPipelineRuns, fetchPipelineDetail, clearSelected } from '../../app/slices/lineageSlice';
 import StatusBadge from '../components/StatusBadge';
 import PageSkeleton from '../components/PageSkeleton';
-import type { PipelineRun, LineageNode, LineageEdge, DataLayer } from '../../domain/entities';
+import type { PipelineRun, LineageNode, LineageEdge, DataLayer, BottleneckAnalysis, RedundancyReport } from '../../domain/entities';
 
 const LAYER_LABELS: Record<string, string> = {
   INGESTION: 'Ingestão', TRUSTED: 'Trusted', ANALYTICS: 'Analytics',
 };
 const LAYER_ORDER = ['INGESTION', 'TRUSTED', 'ANALYTICS'];
+
+const MOCK_BOTTLENECKS: BottleneckAnalysis[] = [
+  { nodeId: "n-etl-047", nodeName: "ETL-047 FFT Copy", layer: "INGESTION", avgLatencyMs: 4500, volumePerHour: 125000, severity: "HIGH", suggestion: "Considerar particionamento do arquivo FFT ou processamento paralelo" },
+  { nodeId: "n-oracle-sync", nodeName: "Oracle Legacy Sync", layer: "INGESTION", avgLatencyMs: 8900, volumePerHour: 45000, severity: "CRITICAL", suggestion: "Migrar para CDC (Change Data Capture) em vez de full dump periódico" },
+  { nodeId: "n-score-calc", nodeName: "Score Calculation", layer: "ANALYTICS", avgLatencyMs: 3200, volumePerHour: 89000, severity: "MEDIUM", suggestion: "Avaliar caching de features intermediárias para reduzir recalculação" },
+];
+
+const MOCK_REDUNDANCIES: RedundancyReport[] = [
+  { id: "red-01", type: "REDUNDANT_FLOW", description: "Pipeline duplicado: ETL-047 e ETL-048 processam o mesmo arquivo FFT com transformações idênticas", affectedNodes: ["ETL-047", "ETL-048"], impact: "MEDIUM", recommendation: "Unificar em um único pipeline com saída para ambos destinos" },
+  { id: "red-02", type: "DEPRECATED_SOURCE", description: "Oracle Legacy Sync usa fonte depreciada (EBVPROD schema v1) que será desativada em Jun/2026", affectedNodes: ["Oracle Legacy Sync", "TB_CLIENTE_HIST"], impact: "HIGH", recommendation: "Migrar para nova API de dados antes do deadline" },
+  { id: "red-03", type: "MISSING_FLOW", description: "Não existe pipeline de reconciliação entre dados Trusted e Analytics para tabela score_fraude", affectedNodes: ["score_fraude_trusted", "score_fraude_analytics"], impact: "HIGH", recommendation: "Criar pipeline de validação cruzada com checagem de contagem e hash" },
+];
 
 interface PositionedNode {
   node: LineageNode;
@@ -608,6 +620,71 @@ export default function LineagePage() {
           </TableContainer>
         </CardContent>
       </Card>
+
+      <Grid container spacing={2} sx={{ mt: 1 }}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent sx={{ p: 2.5 }}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5, color: theme.palette.error.main }}>
+                Análise de Gargalos
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+                Nós com latência ou volume acima do limiar identificados automaticamente
+              </Typography>
+              <Stack spacing={1.5}>
+                {MOCK_BOTTLENECKS.map((bn) => (
+                  <Box key={bn.nodeId} sx={{ p: 1.5, borderRadius: 1.5, border: `1px solid ${bn.severity === "CRITICAL" ? theme.palette.error.main : bn.severity === "HIGH" ? theme.palette.warning.main : theme.palette.divider}`, bgcolor: bn.severity === "CRITICAL" ? (theme.palette.mode === "light" ? "rgba(227,24,55,0.03)" : "rgba(227,24,55,0.06)") : "transparent" }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+                      <Typography variant="body2" fontWeight={700}>{bn.nodeName}</Typography>
+                      <Chip label={bn.severity} size="small" color={bn.severity === "CRITICAL" ? "error" : bn.severity === "HIGH" ? "warning" : "info"} sx={{ fontWeight: 700, fontSize: "0.6rem" }} />
+                    </Box>
+                    <Box sx={{ display: "flex", gap: 2, mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">Latência: <strong>{bn.avgLatencyMs}ms</strong></Typography>
+                      <Typography variant="caption" color="text.secondary">Volume: <strong>{(bn.volumePerHour / 1000).toFixed(0)}k/h</strong></Typography>
+                      <Chip label={LAYER_LABELS[bn.layer]} size="small" variant="outlined" sx={{ fontSize: "0.55rem", height: 18 }} />
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>{bn.suggestion}</Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent sx={{ p: 2.5 }}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5, color: theme.palette.warning.main }}>
+                Fluxos Redundantes & Fontes Depreciadas
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+                Otimizações identificadas na topologia de pipelines
+              </Typography>
+              <Stack spacing={1.5}>
+                {MOCK_REDUNDANCIES.map((rd) => {
+                  const typeLabel = rd.type === "REDUNDANT_FLOW" ? "Redundância" : rd.type === "DEPRECATED_SOURCE" ? "Fonte Depreciada" : "Fluxo Ausente";
+                  const typeColor = rd.type === "REDUNDANT_FLOW" ? "warning" as const : rd.type === "DEPRECATED_SOURCE" ? "error" as const : "info" as const;
+                  return (
+                    <Box key={rd.id} sx={{ p: 1.5, borderRadius: 1.5, border: `1px solid ${theme.palette.divider}` }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+                        <Chip label={typeLabel} size="small" color={typeColor} variant="outlined" sx={{ fontWeight: 600, fontSize: "0.6rem" }} />
+                        <Chip label={rd.impact} size="small" color={rd.impact === "HIGH" ? "error" : "warning"} sx={{ fontSize: "0.55rem", height: 18 }} />
+                      </Box>
+                      <Typography variant="body2" sx={{ mb: 0.5 }}>{rd.description}</Typography>
+                      <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 0.5 }}>
+                        {rd.affectedNodes.map((n) => (
+                          <Chip key={n} label={n} size="small" variant="outlined" sx={{ fontSize: "0.55rem", height: 18 }} />
+                        ))}
+                      </Box>
+                      <Typography variant="caption" sx={{ color: theme.palette.success.main, fontWeight: 600 }}>{rd.recommendation}</Typography>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
     </Box>
   );
 }

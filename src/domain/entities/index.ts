@@ -158,6 +158,241 @@ export interface PipelineRun {
   edges: LineageEdge[];
 }
 
+// ── Catálogo de Dados ────────────────────────────────────────────────────────
+
+export type DataSourceType = 'POSTGRESQL' | 'BIGQUERY' | 'GCS' | 'ORACLE' | 'MYSQL' | 'KAFKA' | 'REST_API';
+
+export interface DataSource {
+  id: string;
+  name: string;
+  type: DataSourceType;
+  layer: DataLayer;
+  owner: string;
+  description: string;
+  tags: string[];
+  tablesCount: number;
+  recordsTotal: number;
+  lastSync: string;
+  status: ProcessStatus;
+  qualityScore: number;
+  hasAlerts: boolean;
+  connectorId: string;
+}
+
+export interface DataAsset {
+  id: string;
+  sourceId: string;
+  name: string;
+  type: 'TABLE' | 'VIEW' | 'TOPIC' | 'ENDPOINT' | 'BUCKET';
+  schema: string;
+  columns: number;
+  rows: number;
+  owner: string;
+  tags: string[];
+  qualityScore: number;
+  lastUpdated: string;
+  description: string;
+  hasTests: boolean;
+  piiFields: string[];
+}
+
+// ── Hub de Eventos ───────────────────────────────────────────────────────────
+
+export type EventType = 'INGESTION' | 'TRANSFORMATION' | 'VALIDATION' | 'ALERT' | 'QUALITY_CHECK' | 'SCHEMA_CHANGE';
+
+export interface DataEvent {
+  id: string;
+  type: EventType;
+  source: string;
+  layer: DataLayer;
+  status: ProcessStatus;
+  timestamp: string;
+  payload: Record<string, unknown>;
+  schemaValid: boolean;
+  metadata: Record<string, string>;
+  processingTimeMs: number;
+}
+
+export interface EventStats {
+  totalToday: number;
+  eventsPerMinute: number;
+  failedEvents: number;
+  schemaViolations: number;
+  avgProcessingMs: number;
+  byLayer: Record<DataLayer, number>;
+}
+
+// ── Qualidade de Dados ───────────────────────────────────────────────────────
+
+export type TestResult = 'PASS' | 'FAIL' | 'ERROR' | 'PENDING';
+
+export interface QualityTest {
+  id: string;
+  name: string;
+  sourceId: string;
+  sourceName: string;
+  query: string;
+  expectedResult: string;
+  lastResult: TestResult;
+  lastRunAt: string;
+  schedule: string;
+  createdBy: string;
+  severity: SeverityLevel;
+  description: string;
+}
+
+export interface QualityIndicator {
+  pipeline: string;
+  layer: DataLayer;
+  completeness: number;
+  accuracy: number;
+  freshness: number;
+  consistency: number;
+  overallScore: number;
+  testsTotal: number;
+  testsPassing: number;
+  lastChecked: string;
+}
+
+// ── Query Builder ────────────────────────────────────────────────────────────
+
+export type BlockType = 'SOURCE' | 'FILTER' | 'JOIN' | 'AGGREGATE' | 'OUTPUT';
+
+export interface QueryBlock {
+  id: string;
+  type: BlockType;
+  label: string;
+  config: Record<string, string>;
+  position: { x: number; y: number };
+}
+
+export interface QueryConnection {
+  id: string;
+  fromId: string;
+  toId: string;
+}
+
+export interface SavedQuery {
+  id: string;
+  name: string;
+  description: string;
+  blocks: QueryBlock[];
+  connections: QueryConnection[];
+  generatedSql: string;
+  createdBy: string;
+  createdAt: string;
+  lastRunAt: string;
+  resultPreview: Record<string, unknown>[];
+}
+
+// ── Motor de Regras ──────────────────────────────────────────────────────────
+
+export type RuleCategory = 'QUALITY' | 'ALERT' | 'ROUTING' | 'TRANSFORMATION' | 'VALIDATION';
+
+export interface BusinessRule {
+  id: string;
+  name: string;
+  description: string;
+  category: RuleCategory;
+  condition: string;
+  action: string;
+  severity: SeverityLevel;
+  layer: DataLayer;
+  enabled: boolean;
+  schedule: string;
+  triggerCount: number;
+  lastTriggeredAt: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  notifyChannels: string[];
+  autoBlocking: boolean;
+}
+
+export interface RuleExecution {
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  executedAt: string;
+  result: 'TRIGGERED' | 'PASSED' | 'ERROR';
+  affectedRecords: number;
+  executionTimeMs: number;
+  details: string;
+}
+
+// ── Conectores e Credenciais ─────────────────────────────────────────────────
+
+export type ConnectorType = 'POSTGRESQL' | 'MYSQL' | 'ORACLE' | 'SQLSERVER' | 'BIGQUERY' | 'GCS' | 'KAFKA' | 'REST_API' | 'SDK';
+export type ConnectorStatus = 'CONNECTED' | 'DISCONNECTED' | 'ERROR' | 'TESTING';
+export type CredentialType = 'USERNAME_PASSWORD' | 'SERVICE_ACCOUNT' | 'API_KEY' | 'OAUTH2' | 'CERTIFICATE';
+export type CredentialStatus = 'VALID' | 'EXPIRED' | 'REVOKED';
+
+export interface Connector {
+  id: string;
+  name: string;
+  type: ConnectorType;
+  host: string;
+  port: number;
+  database: string;
+  status: ConnectorStatus;
+  lastHealthCheck: string;
+  latencyMs: number;
+  poolSize: number;
+  activeConnections: number;
+  credentialId: string;
+  autoReconnect: boolean;
+  createdAt: string;
+  layer: DataLayer;
+}
+
+export interface Credential {
+  id: string;
+  name: string;
+  type: CredentialType;
+  connectorId: string;
+  createdAt: string;
+  lastRotated: string;
+  expiresAt: string | null;
+  status: CredentialStatus;
+}
+
+// ── SLA & ROI ────────────────────────────────────────────────────────────────
+
+export interface SlaMetric {
+  layer: DataLayer;
+  target: number;
+  actual: number;
+  trend: TrendDirection;
+}
+
+export interface RoiMetric {
+  label: string;
+  value: number;
+  unit: string;
+  trend: TrendDirection;
+}
+
+// ── Lineage Análise ──────────────────────────────────────────────────────────
+
+export interface BottleneckAnalysis {
+  nodeId: string;
+  nodeName: string;
+  layer: DataLayer;
+  avgLatencyMs: number;
+  volumePerHour: number;
+  severity: SeverityLevel;
+  suggestion: string;
+}
+
+export interface RedundancyReport {
+  id: string;
+  type: 'REDUNDANT_FLOW' | 'DEPRECATED_SOURCE' | 'MISSING_FLOW';
+  description: string;
+  affectedNodes: string[];
+  impact: SeverityLevel;
+  recommendation: string;
+}
+
 // ── API Response wrapper ──────────────────────────────────────────────────────
 
 export interface ApiResponse<T> {

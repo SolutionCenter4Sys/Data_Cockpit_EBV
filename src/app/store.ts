@@ -19,6 +19,12 @@ import smartAlertsReducer from "./slices/smartAlertsSlice";
 import predictivoReducer from "./slices/predictivoSlice";
 import conselheiroReducer from "./slices/conselheiroSlice";
 import comunicadorReducer from "./slices/comunicadorSlice";
+import dataCatalogReducer from "./slices/dataCatalogSlice";
+import eventHubReducer from "./slices/eventHubSlice";
+import dataQualityReducer from "./slices/dataQualitySlice";
+import queryBuilderReducer from "./slices/queryBuilderSlice";
+import ruleEngineReducer from "./slices/ruleEngineSlice";
+import connectorsReducer from "./slices/connectorsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -41,6 +47,12 @@ export const store = configureStore({
     preditivoIA: predictivoReducer,
     conselheiro: conselheiroReducer,
     comunicador: comunicadorReducer,
+    dataCatalog: dataCatalogReducer,
+    eventHub: eventHubReducer,
+    dataQuality: dataQualityReducer,
+    queryBuilder: queryBuilderReducer,
+    ruleEngine: ruleEngineReducer,
+    connectors: connectorsReducer,
   },
 });
 

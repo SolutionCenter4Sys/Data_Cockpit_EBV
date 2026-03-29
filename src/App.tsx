@@ -1,6 +1,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./presentation/layout/AppLayout";
 import DashboardPage from "./presentation/pages/DashboardPage";
+import DataCatalogPage from "./presentation/pages/DataCatalogPage";
+import EventHubPage from "./presentation/pages/EventHubPage";
+import DataQualityPage from "./presentation/pages/DataQualityPage";
+import QueryBuilderPage from "./presentation/pages/QueryBuilderPage";
+import RuleEnginePage from "./presentation/pages/RuleEnginePage";
+import ConnectorsPage from "./presentation/pages/ConnectorsPage";
 import ScoreMonitorPage from "./presentation/pages/ScoreMonitorPage";
 import AlertsPage from "./presentation/pages/AlertsPage";
 import BatchMonitorPage from "./presentation/pages/BatchMonitorPage";
@@ -26,23 +32,34 @@ export default function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        {/* Plataforma de Monitoramento */}
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/score" element={<ScoreMonitorPage />} />
-        <Route path="/alerts" element={<AlertsPage />} />
-        <Route path="/batch" element={<BatchMonitorPage />} />
+        <Route path="/data-catalog" element={<DataCatalogPage />} />
+        <Route path="/event-hub" element={<EventHubPage />} />
         <Route path="/lineage" element={<LineagePage />} />
+        <Route path="/data-quality" element={<DataQualityPage />} />
+        {/* Motor & Regras */}
+        <Route path="/query-builder" element={<QueryBuilderPage />} />
+        <Route path="/rule-engine" element={<RuleEnginePage />} />
+        <Route path="/action-matrix" element={<ActionMatrixPage />} />
+        <Route path="/connectors" element={<ConnectorsPage />} />
+        {/* Monitoramento */}
+        <Route path="/alerts" element={<AlertsPage />} />
+        <Route path="/score" element={<ScoreMonitorPage />} />
+        <Route path="/batch" element={<BatchMonitorPage />} />
         <Route path="/ingestion" element={<IngestionPage />} />
         <Route path="/trusted" element={<TrustedPage />} />
-        <Route path="/action-matrix" element={<ActionMatrixPage />} />
         <Route path="/governance" element={<GovernancePage />} />
+        {/* Inteligência IA */}
+        <Route path="/analytics-expandido" element={<AnalyticsExpandidoPage />} />
+        <Route path="/smart-alerts" element={<SmartAlertsPage />} />
+        <Route path="/preditivoia" element={<PreditivoPage />} />
+        {/* Agentes */}
         <Route path="/sentinela" element={<SentinelaPage />} />
         <Route path="/guardiao" element={<GuardiaoPage />} />
         <Route path="/detetive" element={<DetetivePage />} />
         <Route path="/auditor" element={<AuditorPage />} />
         <Route path="/guru" element={<GuruPage />} />
-        <Route path="/analytics-expandido" element={<AnalyticsExpandidoPage />} />
-        <Route path="/smart-alerts" element={<SmartAlertsPage />} />
-        <Route path="/preditivoia" element={<PreditivoPage />} />
         <Route path="/conselheiro" element={<ConselheiroPage />} />
         <Route path="/comunicador" element={<ComunicadorPage />} />
         <Route path="/parking-lot" element={<ParkingLotPage />} />

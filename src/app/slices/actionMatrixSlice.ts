@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export type AnomalyLayer = "ingestion" | "trusted" | "analytics" | "batch";
 export type ActionType = "notify" | "block" | "retry" | "escalate" | "auto_fix";
@@ -15,6 +15,8 @@ export interface ActionRule {
 export interface ActionMatrixState {
   rules: ActionRule[]; loading: boolean; error: string | null;
 }
+
+let ruleCounter = 20;
 
 const mockRules: ActionRule[] = [
   { id:"am-01", anomalyType:"Score Zerado", layer:"analytics", severity:"critical", action:"block", actionDescription:"Bloquear envio de score e acionar squad de dados", notifyChannel:"Slack #critical + Email Squad", triggerCount:7, lastTriggeredAt:"2026-03-19T14:22:00Z", status:"active", autoBlocking:true },
@@ -34,7 +36,23 @@ export const fetchActionRules = createAsyncThunk("actionMatrix/fetchRules", asyn
 const actionMatrixSlice = createSlice({
   name: "actionMatrix",
   initialState: { rules:[], loading:false, error:null } as ActionMatrixState,
-  reducers: {},
+  reducers: {
+    createActionRule(state, { payload }: PayloadAction<Omit<ActionRule, "id" | "triggerCount" | "lastTriggeredAt">>) {
+      ruleCounter++;
+      state.rules.push({ ...payload, id: `am-${ruleCounter}`, triggerCount: 0, lastTriggeredAt: null });
+    },
+    updateActionRule(state, { payload }: PayloadAction<ActionRule>) {
+      const idx = state.rules.findIndex((r) => r.id === payload.id);
+      if (idx >= 0) state.rules[idx] = payload;
+    },
+    deleteActionRule(state, { payload }: PayloadAction<string>) {
+      state.rules = state.rules.filter((r) => r.id !== payload);
+    },
+    toggleActionRule(state, { payload }: PayloadAction<string>) {
+      const r = state.rules.find((r) => r.id === payload);
+      if (r) r.status = r.status === "inactive" ? "active" : "inactive";
+    },
+  },
   extraReducers: (b) => {
     b.addCase(fetchActionRules.pending, (s) => { s.loading = true; })
      .addCase(fetchActionRules.fulfilled, (s, { payload }) => { s.loading = false; s.rules = payload; })
@@ -42,4 +60,5 @@ const actionMatrixSlice = createSlice({
   },
 });
 
+export const { createActionRule, updateActionRule, deleteActionRule, toggleActionRule } = actionMatrixSlice.actions;
 export default actionMatrixSlice.reducer;

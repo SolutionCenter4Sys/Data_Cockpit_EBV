@@ -1,8 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Box, Grid, Typography, Chip, Paper, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, useTheme,
+  TableContainer, TableHead, TableRow, useTheme, Button, Dialog,
+  DialogTitle, DialogContent, DialogActions, TextField, FormControl,
+  InputLabel, Select, MenuItem, Stack, CircularProgress, Alert,
 } from "@mui/material";
+import type { SelectChangeEvent } from "@mui/material/Select";
 import ForumIcon from "@mui/icons-material/Forum";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SendIcon from "@mui/icons-material/Send";
@@ -13,11 +16,20 @@ import SlackIcon from "@mui/icons-material/Tag";
 import EmailIcon from "@mui/icons-material/Email";
 import BugReportIcon from "@mui/icons-material/BugReport";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { useAppDispatch, useAppSelector } from "../../app/store";
 import { fetchComunicadorData } from "../../app/slices/comunicadorSlice";
 import type { Channel, NotifStatus } from "../../app/slices/comunicadorSlice";
 import KpiCard from "../components/KpiCard";
 import PageSkeleton from "../components/PageSkeleton";
+
+interface ChannelTestResult {
+  channel: Channel;
+  message: string;
+  success: boolean;
+  timestamp: string;
+  latencyMs: number;
+}
 
 const CHANNEL_ICONS: Record<Channel, React.ReactElement> = {
   slack:     <SlackIcon sx={{ fontSize:14 }} />,
@@ -38,7 +50,29 @@ export default function ComunicadorPage() {
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const { notifications, routingRules, stats, loading } = useAppSelector((s) => s.comunicador);
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [testChannel, setTestChannel] = useState<Channel>("slack");
+  const [testMessage, setTestMessage] = useState("Mensagem de teste do Cockpit EBV — verificação de conectividade do canal.");
+  const [testing, setTesting] = useState(false);
+  const [testResults, setTestResults] = useState<ChannelTestResult[]>([]);
+
   useEffect(() => { dispatch(fetchComunicadorData()); }, [dispatch]);
+
+  const handleTest = async () => {
+    setTesting(true);
+    await new Promise((r) => setTimeout(r, 1500 + Math.random() * 1000));
+    const success = Math.random() > 0.15;
+    setTestResults((prev) => [{
+      channel: testChannel,
+      message: testMessage,
+      success,
+      timestamp: new Date().toISOString(),
+      latencyMs: Math.floor(Math.random() * 500) + 100,
+    }, ...prev]);
+    setTesting(false);
+    setTestDialogOpen(false);
+  };
+
   if (loading && notifications.length === 0) return <PageSkeleton />;
   const isLight = theme.palette.mode === "light";
 
@@ -46,16 +80,19 @@ export default function ComunicadorPage() {
     <Box>
       <Box sx={{ display:"flex", alignItems:"center", gap:1.5, mb:3 }}>
         <ForumIcon sx={{ color:theme.palette.primary.main, fontSize:28 }} />
-        <Box>
+        <Box sx={{ flex: 1 }}>
           <Box sx={{ display:"flex", alignItems:"center", gap:1 }}>
             <Typography variant="h5" fontWeight={700}>AG-04 — Comunicador</Typography>
             <Chip label="Ativo" color="success" size="small" sx={{ fontWeight:700 }} />
           </Box>
           <Typography variant="body2" color="text.secondary">
-            ChatOps inteligente — roteamento contextualizado, atribuicao automatica e reducao de ruido
+            ChatOps inteligente — roteamento contextualizado, atribuição automática e redução de ruído
           </Typography>
         </Box>
-        <Chip label="WSJF 3.3 — Nivel 4: COMUNICAR" size="small" color="secondary" sx={{ ml:"auto" }} />
+        <Button variant="contained" size="small" startIcon={<PlayArrowIcon />} onClick={() => setTestDialogOpen(true)}>
+          Testar Canal
+        </Button>
+        <Chip label="WSJF 3.3 — Nível 4: COMUNICAR" size="small" color="secondary" />
       </Box>
 
       <Grid container spacing={2} mb={3}>
@@ -189,6 +226,98 @@ export default function ComunicadorPage() {
           </Table>
         </TableContainer>
       </Paper>
+
+      {testResults.length > 0 && (
+        <Paper sx={{ borderRadius: 2, overflow: "hidden", mt: 3 }}>
+          <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+            <Typography variant="subtitle1" fontWeight={600}>Resultado dos Testes de Canal</Typography>
+            <Typography variant="caption" color="text.secondary">Histórico de testes de conectividade realizados nesta sessão</Typography>
+          </Box>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell><Typography variant="caption" fontWeight={600}>Canal</Typography></TableCell>
+                  <TableCell><Typography variant="caption" fontWeight={600}>Resultado</Typography></TableCell>
+                  <TableCell><Typography variant="caption" fontWeight={600}>Latência</Typography></TableCell>
+                  <TableCell><Typography variant="caption" fontWeight={600}>Mensagem</Typography></TableCell>
+                  <TableCell><Typography variant="caption" fontWeight={600}>Horário</Typography></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {testResults.map((tr, i) => (
+                  <TableRow key={i} hover sx={{
+                    bgcolor: !tr.success ? (isLight ? "rgba(227,24,55,0.03)" : "rgba(227,24,55,0.06)") : "transparent",
+                  }}>
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        {CHANNEL_ICONS[tr.channel]}
+                        <Typography variant="body2" fontWeight={600}>{tr.channel}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={tr.success ? "Sucesso" : "Falha"}
+                        size="small"
+                        color={tr.success ? "success" : "error"}
+                        icon={tr.success ? <CheckCircleIcon /> : <ErrorOutlineIcon />}
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </TableCell>
+                    <TableCell><Typography variant="body2">{tr.latencyMs}ms</Typography></TableCell>
+                    <TableCell sx={{ maxWidth: 250 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {tr.message}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="caption">{new Date(tr.timestamp).toLocaleTimeString("pt-BR")}</Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      )}
+
+      <Dialog open={testDialogOpen} onClose={() => setTestDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Testar Canal de Notificação</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Canal</InputLabel>
+              <Select value={testChannel} label="Canal" onChange={(e: SelectChangeEvent) => setTestChannel(e.target.value as Channel)}>
+                <MenuItem value="slack">Slack</MenuItem>
+                <MenuItem value="email">Email</MenuItem>
+                <MenuItem value="teams">Teams</MenuItem>
+                <MenuItem value="jira">Jira</MenuItem>
+                <MenuItem value="pagerduty">PagerDuty</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="Mensagem de Teste"
+              fullWidth multiline rows={3}
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+            />
+            <Alert severity="info" sx={{ fontSize: "0.8rem" }}>
+              O teste enviará uma mensagem mock para verificar a conectividade do canal selecionado.
+            </Alert>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTestDialogOpen(false)}>Cancelar</Button>
+          <Button
+            variant="contained"
+            onClick={handleTest}
+            disabled={testing || !testMessage}
+            startIcon={testing ? <CircularProgress size={14} /> : <SendIcon />}
+          >
+            {testing ? "Enviando..." : "Enviar Teste"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
