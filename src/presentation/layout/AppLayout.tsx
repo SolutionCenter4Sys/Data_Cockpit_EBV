@@ -12,7 +12,7 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   '/data-catalog': { title: 'Catálogo de Dados', subtitle: 'Descoberta e exploração de fontes e assets de dados' },
   '/event-hub': { title: 'Hub de Eventos', subtitle: 'Monitoramento de eventos em tempo real com validação de schema' },
   '/lineage': { title: 'Linhagem de Dados', subtitle: 'Lineage de pipelines, gargalos e rastreabilidade' },
-  '/data-quality': { title: 'Qualidade de Dados', subtitle: 'Testes SQL, indicadores de qualidade por pipeline' },
+  '/data-quality': { title: 'Qualidade de Dados', subtitle: 'Construa confiança em seus dados com testes de qualidade e crie produtos de dados confiáveis' },
   '/query-builder': { title: 'Query Builder', subtitle: 'Construtor visual de consultas com preview SQL' },
   '/rule-engine': { title: 'Cadastro de Regras', subtitle: 'Motor de regras de negócio com CEP e automação' },
   '/action-matrix': { title: 'Matriz de Acionamento', subtitle: 'Regras de ação automática por tipo de anomalia' },

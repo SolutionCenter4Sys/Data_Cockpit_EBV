@@ -225,6 +225,7 @@ export interface EventStats {
 // ── Qualidade de Dados ───────────────────────────────────────────────────────
 
 export type TestResult = 'PASS' | 'FAIL' | 'ERROR' | 'PENDING';
+export type IncidentStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED' | 'NONE';
 
 export interface QualityTest {
   id: string;
@@ -239,6 +240,22 @@ export interface QualityTest {
   createdBy: string;
   severity: SeverityLevel;
   description: string;
+  tableName: string;
+  columnName: string;
+  failureReason: string;
+  incidentStatus: IncidentStatus;
+}
+
+export interface TestSuite {
+  id: string;
+  name: string;
+  description: string;
+  tests: string[];
+  owner: string;
+  lastRun: string;
+  passRate: number;
+  totalTests: number;
+  passingTests: number;
 }
 
 export interface QualityIndicator {
