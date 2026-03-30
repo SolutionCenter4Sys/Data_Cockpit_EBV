@@ -316,16 +316,21 @@ export interface QualityTest {
   incidentStatus: IncidentStatus;
 }
 
+export type SuiteType = 'table' | 'pattern';
+
 export interface TestSuite {
   id: string;
   name: string;
   description: string;
   tests: string[];
   owner: string;
+  ownerAvatarColor: string;
   lastRun: string;
   passRate: number;
   totalTests: number;
   passingTests: number;
+  fullPath: string;
+  suiteType: SuiteType;
 }
 
 export interface QualityIndicator {

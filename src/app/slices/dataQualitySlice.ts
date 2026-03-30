@@ -16,6 +16,8 @@ interface DataQualityState {
   error: string | null;
   searchTerm: string;
   filters: DataQualityFilters;
+  suiteSearchTerm: string;
+  suiteOwnerFilter: string;
 }
 
 const mockTests: QualityTest[] = [
@@ -120,9 +122,15 @@ const mockIndicators: QualityIndicator[] = [
 ];
 
 const mockTestSuites: TestSuite[] = [
-  { id: "ts-01", name: "Customer 360 Quality", description: "Testes de qualidade para a tabela customer_360", tests: ["qt-01", "qt-02", "qt-04", "qt-05", "qt-06"], owner: "Ana Silva", lastRun: "2025-12-23T13:31:00Z", passRate: 60, totalTests: 5, passingTests: 3 },
-  { id: "ts-02", name: "CRM Raw Data Validation", description: "Validação de dados brutos do CRM", tests: ["qt-07", "qt-08"], owner: "Rafael Costa", lastRun: "2026-03-28T21:01:00Z", passRate: 0, totalTests: 2, passingTests: 0 },
-  { id: "ts-03", name: "Analytics Mart Integrity", description: "Integridade dos dados no mart analítico", tests: ["qt-03", "qt-09"], owner: "Carlos Mendes", lastRun: "2026-03-28T21:01:00Z", passRate: 0, totalTests: 2, passingTests: 0 },
+  { id: "ts-01", name: "dim_customers", description: "Testes de qualidade para a dimensão de clientes", tests: ["qt-01", "qt-04", "qt-05"], owner: "Ana Silva", ownerAvatarColor: "#AD1457", lastRun: "2025-12-23T13:31:00Z", passRate: 0, totalTests: 1, passingTests: 0, fullPath: "acme_nexus_analytics.ANALYTICS.MARTS.dim_customers", suiteType: "table" },
+  { id: "ts-02", name: "fact_orders", description: "Integridade de pedidos no mart analítico", tests: ["qt-09"], owner: "Carlos Mendes", ownerAvatarColor: "#1565C0", lastRun: "2026-03-28T21:01:00Z", passRate: 0, totalTests: 0, passingTests: 0, fullPath: "acme_nexus_analytics.ANALYTICS.MARTS.fact_orders", suiteType: "table" },
+  { id: "ts-03", name: "stg_customers", description: "Validação de staging de clientes", tests: [], owner: "test", ownerAvatarColor: "#00695C", lastRun: "", passRate: 0, totalTests: 0, passingTests: 0, fullPath: "acme_nexus_analytics.ANALYTICS.STAGING.stg_customers", suiteType: "table" },
+  { id: "ts-04", name: "customers", description: "Dados CRM raw de clientes", tests: ["qt-07", "qt-08"], owner: "Rafael Costa", ownerAvatarColor: "#E65100", lastRun: "2026-03-28T21:01:00Z", passRate: 0, totalTests: 0, passingTests: 0, fullPath: "acme_nexus_raw_data.acme_raw.crm.customers", suiteType: "table" },
+  { id: "ts-05", name: "raw_sales_orders", description: "Pedidos de venda brutos", tests: [], owner: "Carlos Mendes", ownerAvatarColor: "#1565C0", lastRun: "", passRate: 0, totalTests: 0, passingTests: 0, fullPath: "acme_nexus_raw_data.acme_raw.sales.orders", suiteType: "table" },
+  { id: "ts-06", name: "customer_360", description: "Visão 360 consolidada do cliente", tests: ["qt-01", "qt-02", "qt-04", "qt-05", "qt-06"], owner: "Ana Silva", ownerAvatarColor: "#AD1457", lastRun: "2025-12-23T13:31:00Z", passRate: 0, totalTests: 0, passingTests: 0, fullPath: "db_mind_treo.6a2663ad.database_well_successfu...96bc6110.schema_yeah_plck_d4Cce301.tato_e_behind_increase_506571cd", suiteType: "table" },
+  { id: "ts-07", name: "anything_table", description: "Tabela genérica de testes diversos", tests: [], owner: "Lucia Ferreira", ownerAvatarColor: "#7B1FA2", lastRun: "", passRate: 0, totalTests: 0, passingTests: 0, fullPath: "db_mind_treo.6a2663ad.database_well_successfu...96bc6110.schema_yeah_plck_d4Cce301.tato_e_bell_anything_e9b0971a", suiteType: "table" },
+  { id: "ts-08", name: "pattern_null_check", description: "Padrão para verificar nulos em todas as colunas obrigatórias", tests: ["qt-01", "qt-05", "qt-08"], owner: "Ana Silva", ownerAvatarColor: "#AD1457", lastRun: "2026-03-29T10:00:00Z", passRate: 33, totalTests: 3, passingTests: 1, fullPath: "pattern://null_check_all_required_columns", suiteType: "pattern" },
+  { id: "ts-09", name: "pattern_uniqueness", description: "Padrão para validar unicidade de chaves primárias", tests: ["qt-03", "qt-04", "qt-07"], owner: "Carlos Mendes", ownerAvatarColor: "#1565C0", lastRun: "2026-03-29T10:00:00Z", passRate: 33, totalTests: 3, passingTests: 1, fullPath: "pattern://uniqueness_primary_keys", suiteType: "pattern" },
 ];
 
 export const fetchTests = createAsyncThunk("dataQuality/fetchTests", async () => {
@@ -156,6 +164,8 @@ const initialState: DataQualityState = {
   error: null,
   searchTerm: "",
   filters: { table: "", type: "", status: "", tags: "" },
+  suiteSearchTerm: "",
+  suiteOwnerFilter: "",
 };
 
 const dataQualitySlice = createSlice({
@@ -180,6 +190,12 @@ const dataQualitySlice = createSlice({
       state.searchTerm = "";
       state.filters = { table: "", type: "", status: "", tags: "" };
     },
+    setSuiteSearchTerm(state, { payload }: PayloadAction<string>) {
+      state.suiteSearchTerm = payload;
+    },
+    setSuiteOwnerFilter(state, { payload }: PayloadAction<string>) {
+      state.suiteOwnerFilter = payload;
+    },
   },
   extraReducers: (b) => {
     b.addCase(fetchTests.pending, (s) => { s.loading = true; })
@@ -198,5 +214,5 @@ const dataQualitySlice = createSlice({
   },
 });
 
-export const { createTest, updateTest, setSearchTerm, setFilter, clearFilters } = dataQualitySlice.actions;
+export const { createTest, updateTest, setSearchTerm, setFilter, clearFilters, setSuiteSearchTerm, setSuiteOwnerFilter } = dataQualitySlice.actions;
 export default dataQualitySlice.reducer;

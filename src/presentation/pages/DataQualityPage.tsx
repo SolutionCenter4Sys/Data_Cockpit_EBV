@@ -4,7 +4,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl,
   InputLabel, Select, MenuItem, IconButton, LinearProgress, CircularProgress,
-  Tabs, Tab, InputAdornment, alpha,
+  Tabs, Tab, InputAdornment, alpha, Avatar, Tooltip,
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material/Select";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
@@ -24,9 +24,9 @@ import {
 import { useAppDispatch, useAppSelector } from "../../app/store";
 import {
   fetchTests, fetchIndicators, fetchTestSuites, runTest, createTest,
-  setSearchTerm, setFilter, clearFilters,
+  setSearchTerm, setFilter, clearFilters, setSuiteSearchTerm, setSuiteOwnerFilter,
 } from "../../app/slices/dataQualitySlice";
-import type { TestResult, SeverityLevel, IncidentStatus } from "../../domain/entities";
+import type { TestResult, SeverityLevel, IncidentStatus, SuiteType } from "../../domain/entities";
 import PageSkeleton from "../components/PageSkeleton";
 
 const STATUS_CONFIG: Record<TestResult, { label: string; bg: string; color: string; icon: React.ReactElement }> = {
@@ -67,12 +67,13 @@ const EMPTY_FORM = {
 export default function DataQualityPage() {
   const dispatch = useAppDispatch();
   const theme = useTheme();
-  const { tests, indicators, testSuites, loading, searchTerm, filters } = useAppSelector((s) => s.dataQuality);
+  const { tests, indicators, testSuites, loading, searchTerm, filters, suiteSearchTerm, suiteOwnerFilter } = useAppSelector((s) => s.dataQuality);
   const [tabIndex, setTabIndex] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [runningId, setRunningId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [showAdvanced, setShowAdvanced] = useState(true);
+  const [suiteSubTab, setSuiteSubTab] = useState<SuiteType>("table");
 
   useEffect(() => {
     dispatch(fetchTests());
@@ -479,39 +480,192 @@ export default function DataQualityPage() {
       )}
 
       {/* Tab 1: Conjuntos de Testes */}
-      {tabIndex === 1 && (
+      {tabIndex === 1 && (() => {
+        const suiteOwners = [...new Set(testSuites.map((s) => s.owner))];
+        const filteredSuites = testSuites.filter((s) => {
+          if (s.suiteType !== suiteSubTab) return false;
+          if (suiteOwnerFilter && s.owner !== suiteOwnerFilter) return false;
+          if (suiteSearchTerm) {
+            const lower = suiteSearchTerm.toLowerCase();
+            return s.name.toLowerCase().includes(lower) || s.fullPath.toLowerCase().includes(lower);
+          }
+          return true;
+        });
+
+        return (
         <Box>
-          {/* Test Suites Cards */}
+          {/* Owner filter */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2.5, flexWrap: "wrap" }}>
+            <Typography variant="caption" fontWeight={600} color="text.secondary">Proprietário:</Typography>
+            <FormControl size="small" sx={{ minWidth: 160 }}>
+              <Select
+                value={suiteOwnerFilter}
+                displayEmpty
+                onChange={(e: SelectChangeEvent) => dispatch(setSuiteOwnerFilter(e.target.value))}
+                sx={{ fontSize: "0.8rem", height: 32 }}
+              >
+                <MenuItem value=""><em>Todos</em></MenuItem>
+                {suiteOwners.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Box>
+
+          {/* KPIs */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            {testSuites.map((suite) => (
-              <Grid item xs={12} sm={6} md={4} key={suite.id}>
-                <Card sx={{ border: `1px solid ${borderColor}`, bgcolor: cardBg, height: "100%" }}>
-                  <CardContent sx={{ p: 2.5 }}>
-                    <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>{suite.name}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>{suite.description}</Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                      <LinearProgress
-                        variant="determinate" value={suite.passRate}
-                        color={suite.passRate >= 80 ? "success" : suite.passRate >= 50 ? "warning" : "error"}
-                        sx={{ flex: 1, height: 6, borderRadius: 3 }}
-                      />
-                      <Typography variant="caption" fontWeight={700}>{suite.passRate}%</Typography>
+            <Grid item xs={12} sm={4}>
+              <Card sx={{ border: `1px solid ${borderColor}`, bgcolor: cardBg }}>
+                <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: theme.palette.primary.main }} />
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>Total de Testes</Typography>
+                      </Box>
+                      <Typography variant="h3" fontWeight={700} color="text.primary">{tests.length}</Typography>
+                      <Box sx={{ display: "flex", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
+                        {pieData.map((d) => (
+                          <Box key={d.name} sx={{ display: "flex", alignItems: "center", gap: 0.3 }}>
+                            <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: PIE_COLORS[d.name] }} />
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>{d.name} {d.value}</Typography>
+                          </Box>
+                        ))}
+                      </Box>
                     </Box>
-                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {suite.passingTests}/{suite.totalTests} testes passando
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {suite.owner}
-                      </Typography>
+                    <Box sx={{ width: 80, height: 80, position: "relative" }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart><Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={22} outerRadius={36} strokeWidth={0}>{pieData.map((d) => <Cell key={d.name} fill={PIE_COLORS[d.name]} />)}</Pie></PieChart>
+                      </ResponsiveContainer>
+                      <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", textAlign: "center" }}>
+                        <Typography variant="caption" fontWeight={800} sx={{ fontSize: "0.7rem", lineHeight: 1 }}>{successPct}%</Typography>
+                      </Box>
                     </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Card sx={{ border: `1px solid ${borderColor}`, bgcolor: cardBg }}>
+                <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#4CAF50" }} />
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>Ativos de dados saudáveis</Typography>
+                      </Box>
+                      <Typography variant="h3" fontWeight={700} color="text.primary">{healthyAssets.total}</Typography>
+                    </Box>
+                    <Box sx={{ width: 80, height: 80, position: "relative" }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart><Pie data={healthPieData} dataKey="value" cx="50%" cy="50%" innerRadius={22} outerRadius={36} strokeWidth={0}><Cell fill="#4CAF50" /><Cell fill={isDark ? "#333" : "#E0E0E0"} /></Pie></PieChart>
+                      </ResponsiveContainer>
+                      <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", textAlign: "center" }}>
+                        <Typography variant="caption" fontWeight={800} sx={{ fontSize: "0.7rem", lineHeight: 1, color: "#4CAF50" }}>{healthyPct}%</Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Card sx={{ border: `1px solid ${borderColor}`, bgcolor: cardBg }}>
+                <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+                    <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: theme.palette.info.main }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>Cobertura de ativos de dados</Typography>
+                  </Box>
+                  <Typography variant="h3" fontWeight={700} color="text.primary">
+                    {[...new Set(tests.filter((t) => t.columnName !== "--").map((t) => t.columnName))].length}
+                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1.5 }}>
+                    <LinearProgress variant="determinate" value={parseFloat(coveragePct)} sx={{ flex: 1, height: 8, borderRadius: 4, bgcolor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", "& .MuiLinearProgress-bar": { borderRadius: 4 } }} />
+                    <Typography variant="caption" fontWeight={700} color="text.secondary">{coveragePct}%</Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
 
-          {/* Pipeline Indicators + Radar (existing content relocated) */}
+          {/* Sub-tabs: Suítes de Tabela / Suítes de Padrões */}
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+            <Tabs
+              value={suiteSubTab}
+              onChange={(_, v) => setSuiteSubTab(v as SuiteType)}
+              sx={{ minHeight: 32 }}
+            >
+              <Tab value="table" label={`Suítes de Tabela (${testSuites.filter((s) => s.suiteType === "table").length})`} sx={{ textTransform: "none", fontWeight: 600, minHeight: 32, py: 0.5, fontSize: "0.82rem" }} />
+              <Tab value="pattern" label={`Suítes de Padrões (${testSuites.filter((s) => s.suiteType === "pattern").length})`} sx={{ textTransform: "none", fontWeight: 600, minHeight: 32, py: 0.5, fontSize: "0.82rem" }} />
+            </Tabs>
+            <TextField
+              size="small"
+              placeholder={suiteSubTab === "table" ? "Pesquisar Suítes de Tabela" : "Pesquisar Suítes de Padrões"}
+              value={suiteSearchTerm}
+              onChange={(e) => dispatch(setSuiteSearchTerm(e.target.value))}
+              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: "text.secondary" }} /></InputAdornment> }}
+              sx={{ width: 280 }}
+            />
+          </Box>
+
+          {/* Suites Table */}
+          <Card sx={{ border: `1px solid ${borderColor}`, bgcolor: cardBg, mb: 3 }}>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell><Typography variant="caption" fontWeight={700}>Nome</Typography></TableCell>
+                    <TableCell align="center"><Typography variant="caption" fontWeight={700}>Testes</Typography></TableCell>
+                    <TableCell><Typography variant="caption" fontWeight={700}>Sucesso %</Typography></TableCell>
+                    <TableCell><Typography variant="caption" fontWeight={700}>Proprietários</Typography></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredSuites.map((suite) => (
+                    <TableRow key={suite.id} hover>
+                      <TableCell>
+                        <Typography
+                          variant="body2" fontWeight={600}
+                          sx={{ color: theme.palette.primary.main, cursor: "pointer", "&:hover": { textDecoration: "underline" }, fontSize: "0.82rem" }}
+                        >
+                          {suite.fullPath}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Typography variant="body2">{suite.totalTests}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 140 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={suite.passRate}
+                            color={suite.passRate >= 80 ? "success" : suite.passRate >= 50 ? "warning" : "error"}
+                            sx={{ flex: 1, height: 6, borderRadius: 3, bgcolor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)" }}
+                          />
+                          <Typography variant="caption" fontWeight={700} sx={{ minWidth: 30 }}>{suite.passRate}%</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={-0.5}>
+                          <Tooltip title={suite.owner}>
+                            <Avatar sx={{ width: 26, height: 26, fontSize: "0.65rem", bgcolor: suite.ownerAvatarColor, border: `2px solid ${cardBg}` }}>
+                              {suite.owner.charAt(0)}
+                            </Avatar>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredSuites.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                        <Typography variant="body2" color="text.secondary">Nenhuma suíte encontrada</Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Card>
+
+          {/* Pipeline Indicators + Radar */}
           <Grid container spacing={2}>
             <Grid item xs={12} md={7}>
               <Card sx={{ border: `1px solid ${borderColor}`, bgcolor: cardBg }}>
@@ -583,7 +737,8 @@ export default function DataQualityPage() {
             </Grid>
           </Grid>
         </Box>
-      )}
+        );
+      })()}
 
       {/* Dialog: Adicionar Caso de Teste */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
