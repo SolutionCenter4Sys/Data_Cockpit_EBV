@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Grid,
   Box,
@@ -7,7 +8,6 @@ import {
   Typography,
   Alert,
   LinearProgress,
-  Divider,
   useTheme,
   FormControl,
   InputLabel,
@@ -24,23 +24,24 @@ import TableViewIcon from '@mui/icons-material/TableView';
 import DownloadIcon from '@mui/icons-material/Download';
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip as RechartsTooltip,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip as RechartsTooltip,
   Legend,
-  Cell,
 } from 'recharts';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { fetchDashboard } from '../../app/slices/dashboardSlice';
+import { fetchPipelineRuns } from '../../app/slices/lineageSlice';
+import { fetchTests } from '../../app/slices/dataQualitySlice';
 import KpiCard from '../components/KpiCard';
-import HealthRing from '../components/HealthRing';
 import PageSkeleton from '../components/PageSkeleton';
-import type { LayerHealth, DataLayer, GlobalHealthKpi, SlaMetric, RoiMetric, StageHealth, PipelineStage } from '../../domain/entities';
+import type { DataLayer, SlaMetric, RoiMetric, StageHealth, PipelineStage } from '../../domain/entities';
 
 type DashboardPeriod = '1H' | '4H' | '24H' | '7D' | '30D';
 type LayerFilter = 'ALL' | DataLayer;
@@ -76,12 +77,6 @@ const MOCK_ROI: RoiMetric[] = [
   { label: 'ROI Plataforma', value: 340, unit: '%', trend: 'UP' },
 ];
 
-interface TrendPoint {
-  label: string;
-  atual: number;
-  anterior: number;
-}
-
 const LAYER_LABELS: Record<string, string> = {
   ALL: 'Todas',
   INGESTION: 'Ingestão',
@@ -97,74 +92,7 @@ const PERIOD_LABELS: Record<DashboardPeriod, string> = {
   '30D': 'Últimos 30 dias',
 };
 
-const PERIOD_POINTS: Record<DashboardPeriod, number> = {
-  '1H': 6,
-  '4H': 8,
-  '24H': 12,
-  '7D': 14,
-  '30D': 15,
-};
-
-const PROCESS_OPTIONS = [
-  'ETL-047 FFT Copy',
-  'BATCH-092 Trusted Sync',
-  'MDL-003 Score Fraude',
-  'MDL-001 Score Crédito PF',
-  'Trusted Data Validation Service',
-  'Model Metrics Registry',
-];
-
-const KPI_PROCESS_MAP: Record<string, string[]> = {
-  'Score Zerado': ['MDL-003 Score Fraude', 'MDL-001 Score Crédito PF'],
-  'Falhas Batch': ['ETL-047 FFT Copy', 'BATCH-092 Trusted Sync'],
-  'Modelos Monitorados': ['Model Metrics Registry'],
-  'Ingestão OK': ['Trusted Data Validation Service', 'ETL-047 FFT Copy'],
-};
-
-const getHealthColor = (score: number, isLight: boolean) => {
-  if (score >= 80) return isLight ? '#00873D' : '#10B981';
-  if (score >= 60) return '#F5A623';
-  return '#E31837';
-};
-
-const toNumericValue = (value: number | string): number => {
-  if (typeof value === 'number') return value;
-  const parsed = Number(String(value).replace(',', '.'));
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const pseudoRandom = (seed: number): number => {
-  const x = Math.sin(seed * 12.9898) * 43758.5453;
-  return x - Math.floor(x);
-};
-
-const buildPointLabel = (period: DashboardPeriod, index: number, total: number): string => {
-  if (period === '7D' || period === '30D') {
-    return `D-${total - index}`;
-  }
-  return `T-${total - index}`;
-};
-
-const buildTrendSeries = (period: DashboardPeriod, kpi: GlobalHealthKpi): TrendPoint[] => {
-  const total = PERIOD_POINTS[period];
-  const base = toNumericValue(kpi.value);
-  const amplitude = Math.max(base * 0.12, 2);
-  const seedBase = kpi.label.length + base;
-
-  return Array.from({ length: total }, (_, index) => {
-    const noise = pseudoRandom(seedBase + index) - 0.5;
-    const prevNoise = pseudoRandom(seedBase + index + 17) - 0.5;
-    const drift = ((index / (total - 1)) * 2 - 1) * 0.6;
-    const atual = Math.max(0, Number((base + noise * amplitude + drift).toFixed(1)));
-    const anterior = Math.max(0, Number((base + prevNoise * amplitude - drift * 0.75).toFixed(1)));
-
-    return {
-      label: buildPointLabel(period, index, total),
-      atual,
-      anterior,
-    };
-  });
-};
+const OWNER_OPTIONS = [...new Set(MOCK_STAGE_HEALTH.map((s) => s.owner))];
 
 const escapeCsv = (value: string | number): string => {
   const text = String(value);
@@ -192,107 +120,52 @@ const isDashboardPeriod = (value: string): value is DashboardPeriod =>
 const isLayerFilter = (value: string): value is LayerFilter =>
   value === 'ALL' || value === 'INGESTION' || value === 'TRUSTED' || value === 'ANALYTICS';
 
-function LayerHealthRow({ layer }: { layer: LayerHealth }) {
-  const theme = useTheme();
-  const isLight = theme.palette.mode === 'light';
-  const color = getHealthColor(layer.healthScore, isLight);
-
-  return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, boxShadow: `0 0 5px ${color}` }} />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
-            {LAYER_LABELS[layer.layer]}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 3 }}>
-          <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-            <span style={{ color, fontWeight: 700 }}>{layer.healthScore}%</span> saúde
-          </Typography>
-          <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-            <span style={{ color: layer.activeAlerts > 0 ? '#F5A623' : color, fontWeight: 600 }}>
-              {layer.activeAlerts}
-            </span>{' '}alertas
-          </Typography>
-          <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-            <span style={{ fontWeight: 600, color: theme.palette.text.primary }}>{layer.successRate}%</span> sucesso
-          </Typography>
-        </Box>
-      </Box>
-      <LinearProgress
-        variant="determinate"
-        value={layer.healthScore}
-        sx={{ mb: 1.5, '& .MuiLinearProgress-bar': { backgroundColor: color } }}
-      />
-    </Box>
-  );
-}
+const DONUT_COLORS = { success: '#4CAF50', fail: '#F44336', other: '#FF9800' };
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const theme = useTheme();
   const { data, loading, error } = useAppSelector((s) => s.dashboard);
+  const { runs } = useAppSelector((s) => s.lineage);
+  const { tests } = useAppSelector((s) => s.dataQuality);
+
   const [period, setPeriod] = useState<DashboardPeriod>('24H');
   const [layerFilter, setLayerFilter] = useState<LayerFilter>('ALL');
   const [processFilter, setProcessFilter] = useState('');
-  const [selectedMetric, setSelectedMetric] = useState('');
-
-  useEffect(() => { dispatch(fetchDashboard()); }, [dispatch]);
-
-  const filteredLayerHealth = useMemo<LayerHealth[]>(
-    () => {
-      if (!data) return [];
-      return data.layerHealth.filter((layer) => (layerFilter === 'ALL' ? true : layer.layer === layerFilter));
-    },
-    [data, layerFilter]
-  );
-
-  const filteredKpis = useMemo<GlobalHealthKpi[]>(
-    () => {
-      if (!data) return [];
-
-      const matchedKpiLabels = processFilter.trim().length === 0
-        ? data.kpis.map((kpi) => kpi.label)
-        : Object.entries(KPI_PROCESS_MAP)
-            .filter(([, processList]) =>
-              processList.some((processName) => processName.toLowerCase().includes(processFilter.toLowerCase()))
-            )
-            .map(([kpiLabel]) => kpiLabel);
-
-      return data.kpis.filter((kpi) => matchedKpiLabels.includes(kpi.label));
-    },
-    [data, processFilter]
-  );
-
-  const trendByKpi = useMemo<Record<string, TrendPoint[]>>(() => {
-    return filteredKpis.reduce<Record<string, TrendPoint[]>>((acc, kpi) => {
-      acc[kpi.label] = buildTrendSeries(period, kpi);
-      return acc;
-    }, {});
-  }, [filteredKpis, period]);
+  const [dateFilter, setDateFilter] = useState(() => new Date().toISOString().slice(0, 10));
+  const [ownerFilter, setOwnerFilter] = useState('');
 
   useEffect(() => {
-    if (!data) return;
-    if (filteredKpis.length === 0) {
-      setSelectedMetric('');
-      return;
-    }
-    if (!filteredKpis.some((kpi) => kpi.label === selectedMetric)) {
-      setSelectedMetric(filteredKpis[0].label);
-    }
-  }, [data, filteredKpis, selectedMetric]);
+    dispatch(fetchDashboard());
+    dispatch(fetchPipelineRuns());
+    dispatch(fetchTests());
+  }, [dispatch]);
 
-  const selectedTrend = selectedMetric ? trendByKpi[selectedMetric] ?? [] : [];
+  const filteredStages = useMemo(
+    () => ownerFilter ? MOCK_STAGE_HEALTH.filter((s) => s.owner === ownerFilter) : MOCK_STAGE_HEALTH,
+    [ownerFilter],
+  );
 
-  const filteredOverallHealth = filteredLayerHealth.length === 0
-    ? 0
-    : Math.round(
-        filteredLayerHealth.reduce((sum, layer) => sum + layer.healthScore, 0) / filteredLayerHealth.length
-      );
+  const pipelineDonut = useMemo(() => {
+    if (runs.length === 0) return { success: 0, fail: 0, pct: 0 };
+    const success = runs.filter((r) => r.status === 'SUCCESS').length;
+    const fail = runs.length - success;
+    return { success, fail, pct: Math.round((success / runs.length) * 100) };
+  }, [runs]);
+
+  const qualityDonut = useMemo(() => {
+    if (tests.length === 0) return { success: 0, fail: 0, pct: 0 };
+    const success = tests.filter((t) => t.lastResult === 'PASS').length;
+    const fail = tests.length - success;
+    return { success, fail, pct: Math.round((success / tests.length) * 100) };
+  }, [tests]);
 
   const activeFilterCount =
-    (layerFilter !== 'ALL' ? 1 : 0) + (processFilter.trim().length > 0 ? 1 : 0) + (period !== '24H' ? 1 : 0);
+    (layerFilter !== 'ALL' ? 1 : 0) +
+    (processFilter.trim().length > 0 ? 1 : 0) +
+    (period !== '24H' ? 1 : 0) +
+    (ownerFilter ? 1 : 0);
 
   if (loading && !data) return <PageSkeleton cards={4} rows={5} />;
   if (error) return <Alert severity="error" sx={{ mb: 2 }}>Erro ao carregar dashboard: {error}</Alert>;
@@ -300,72 +173,33 @@ export default function DashboardPage() {
 
   const handlePeriodChange = (event: SelectChangeEvent<string>): void => {
     const value = event.target.value;
-    if (isDashboardPeriod(value)) {
-      setPeriod(value);
-    }
+    if (isDashboardPeriod(value)) setPeriod(value);
   };
 
   const handleLayerChange = (event: SelectChangeEvent<string>): void => {
     const value = event.target.value;
-    if (isLayerFilter(value)) {
-      setLayerFilter(value);
-    }
+    if (isLayerFilter(value)) setLayerFilter(value);
   };
 
   const handleExportCsv = (): void => {
-    const rows: string[] = [];
-    rows.push('tipo;nome;valor;unidade;severidade;periodo;camada;processo_filtro');
-    filteredKpis.forEach((kpi) => {
+    const rows: string[] = ['tipo;nome;valor;unidade;periodo;camada'];
+    filteredStages.forEach((stage) => {
       rows.push(
-        [
-          'kpi',
-          escapeCsv(kpi.label),
-          escapeCsv(kpi.value),
-          escapeCsv(kpi.unit ?? ''),
-          escapeCsv(kpi.severity),
-          escapeCsv(PERIOD_LABELS[period]),
-          escapeCsv(LAYER_LABELS[layerFilter]),
-          escapeCsv(processFilter || 'todos'),
-        ].join(';')
+        ['stage', escapeCsv(stage.label), escapeCsv(stage.healthScore), '%', escapeCsv(PERIOD_LABELS[period]), escapeCsv(LAYER_LABELS[layerFilter])].join(';'),
       );
     });
-    filteredLayerHealth.forEach((layer) => {
-      rows.push(
-        [
-          'camada',
-          escapeCsv(LAYER_LABELS[layer.layer]),
-          escapeCsv(layer.healthScore),
-          '%',
-          'HEALTH',
-          escapeCsv(PERIOD_LABELS[period]),
-          escapeCsv(LAYER_LABELS[layerFilter]),
-          escapeCsv(processFilter || 'todos'),
-        ].join(';')
-      );
-    });
-
-    downloadFile(
-      `dashboard-cockpit-${Date.now()}.csv`,
-      rows.join('\n'),
-      'text/csv;charset=utf-8;'
-    );
+    downloadFile(`dashboard-cockpit-${Date.now()}.csv`, rows.join('\n'), 'text/csv;charset=utf-8;');
   };
 
   const handleExportSnapshot = (): void => {
     const snapshot = {
       exportedAt: new Date().toISOString(),
-      filters: { period, layerFilter, processFilter },
-      overallHealth: filteredOverallHealth,
-      kpis: filteredKpis,
-      layerHealth: filteredLayerHealth,
+      filters: { period, layerFilter, processFilter, dateFilter, ownerFilter },
+      stages: filteredStages,
       criticalAlerts: data.criticalAlerts,
       activeAlerts: data.activeAlerts,
     };
-    downloadFile(
-      `dashboard-cockpit-snapshot-${Date.now()}.json`,
-      JSON.stringify(snapshot, null, 2),
-      'application/json;charset=utf-8;'
-    );
+    downloadFile(`dashboard-cockpit-snapshot-${Date.now()}.json`, JSON.stringify(snapshot, null, 2), 'application/json;charset=utf-8;');
   };
 
   return (
@@ -396,7 +230,7 @@ export default function DashboardPage() {
             Ingestão → Governança → DW → Analytics → Delivery → Produtos
           </Typography>
           <Grid container spacing={2}>
-            {MOCK_STAGE_HEALTH.map((stage) => {
+            {filteredStages.map((stage) => {
               const color = STAGE_COLORS[stage.stage];
               const passRate = stage.qualityChecks > 0 ? Math.round((stage.qualityPassing / stage.qualityChecks) * 100) : 0;
               return (
@@ -454,80 +288,79 @@ export default function DashboardPage() {
               <FilterAltIcon fontSize="small" sx={{ color: theme.palette.secondary.main }} />
               <Typography variant="h6">Filtros globais e exportação</Typography>
               {activeFilterCount > 0 && (
-                <Chip
-                  size="small"
-                  color="secondary"
-                  variant="outlined"
-                  label={`${activeFilterCount} filtro(s) ativo(s)`}
-                />
+                <Chip size="small" color="secondary" variant="outlined" label={`${activeFilterCount} filtro(s) ativo(s)`} />
               )}
             </Box>
             <Stack direction="row" spacing={1}>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<TableViewIcon fontSize="small" />}
-                onClick={handleExportCsv}
-              >
+              <Button size="small" variant="outlined" startIcon={<TableViewIcon fontSize="small" />} onClick={handleExportCsv}>
                 Exportar CSV
               </Button>
-              <Button
-                size="small"
-                variant="contained"
-                startIcon={<DownloadIcon fontSize="small" />}
-                onClick={handleExportSnapshot}
-              >
+              <Button size="small" variant="contained" startIcon={<DownloadIcon fontSize="small" />} onClick={handleExportSnapshot}>
                 Snapshot JSON
               </Button>
             </Stack>
           </Stack>
 
           <Grid container spacing={1.5}>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel id="dashboard-period-label">Período</InputLabel>
-                <Select
-                  labelId="dashboard-period-label"
-                  value={period}
-                  label="Período"
-                  onChange={handlePeriodChange}
-                >
-                  {Object.entries(PERIOD_LABELS).map(([value, label]) => (
-                    <MenuItem key={value} value={value}>
-                      {label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel id="dashboard-layer-label">Camada</InputLabel>
-                <Select
-                  labelId="dashboard-layer-label"
-                  value={layerFilter}
-                  label="Camada"
-                  onChange={handleLayerChange}
-                >
-                  {Object.entries(LAYER_LABELS).map(([value, label]) => (
-                    <MenuItem key={value} value={value}>
-                      {label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={2}>
               <TextField
                 fullWidth
                 size="small"
-                label="Filtro por processo/job"
+                type="date"
+                label="Data"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="dashboard-owner-label">Responsável</InputLabel>
+                <Select
+                  labelId="dashboard-owner-label"
+                  value={ownerFilter}
+                  label="Responsável"
+                  onChange={(e: SelectChangeEvent) => setOwnerFilter(e.target.value)}
+                >
+                  <MenuItem value="">Todos</MenuItem>
+                  {OWNER_OPTIONS.map((o) => (
+                    <MenuItem key={o} value={o}>{o}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="dashboard-period-label">Período</InputLabel>
+                <Select labelId="dashboard-period-label" value={period} label="Período" onChange={handlePeriodChange}>
+                  {Object.entries(PERIOD_LABELS).map(([value, label]) => (
+                    <MenuItem key={value} value={value}>{label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="dashboard-layer-label">Camada</InputLabel>
+                <Select labelId="dashboard-layer-label" value={layerFilter} label="Camada" onChange={handleLayerChange}>
+                  {Object.entries(LAYER_LABELS).map(([value, label]) => (
+                    <MenuItem key={value} value={value}>{label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Processo/job"
                 value={processFilter}
-                onChange={(event) => setProcessFilter(event.target.value)}
-                placeholder="Ex: ETL-047, MDL-003"
-                helperText={`Sugestões: ${PROCESS_OPTIONS.slice(0, 3).join(' · ')}`}
+                onChange={(e) => setProcessFilter(e.target.value)}
+                placeholder="Ex: ETL-047"
               />
             </Grid>
 
@@ -541,6 +374,8 @@ export default function DashboardPage() {
                   setPeriod('24H');
                   setLayerFilter('ALL');
                   setProcessFilter('');
+                  setOwnerFilter('');
+                  setDateFilter(new Date().toISOString().slice(0, 10));
                 }}
               >
                 Limpar filtros
@@ -550,137 +385,102 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        {filteredKpis.map((kpi) => (
-          <Grid item xs={12} sm={6} md={3} key={kpi.label}>
-            <KpiCard
-              {...kpi}
-              trendPreview={(trendByKpi[kpi.label] ?? []).map((point) => ({
-                label: point.label,
-                value: point.atual,
-              }))}
-            />
-          </Grid>
-        ))}
-      </Grid>
-
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={8}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h5" sx={{ mb: 0.5 }}>Saúde por Camada</Typography>
-              <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 3 }}>
-                Ingestão → Trusted → Analytics
-              </Typography>
-              {filteredLayerHealth.map((layer) => (
-                <LayerHealthRow key={layer.layer} layer={layer} />
-              ))}
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', gap: 3 }}>
-                <Box>
-                  <Typography variant="overline" sx={{ color: theme.palette.text.secondary }}>Total Alertas</Typography>
-                  <Typography
-                    variant="h4"
-                    sx={{ color: data.activeAlerts > 0 ? '#F5A623' : theme.palette.success.main, fontWeight: 700 }}
-                  >
-                    {data.activeAlerts}
-                  </Typography>
-                </Box>
-                <Divider orientation="vertical" flexItem />
-                <Box>
-                  <Typography variant="overline" sx={{ color: theme.palette.text.secondary }}>Críticos</Typography>
-                  <Typography
-                    variant="h4"
-                    sx={{ color: data.criticalAlerts > 0 ? theme.palette.error.main : theme.palette.success.main, fontWeight: 700 }}
-                  >
-                    {data.criticalAlerts}
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent
-              sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}
-            >
-              <Typography variant="h5" sx={{ mb: 2, alignSelf: 'flex-start' }}>Saúde Geral</Typography>
-              <HealthRing value={filteredOverallHealth} size={140} strokeWidth={10} />
-              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mt: 2, textAlign: 'center' }}>
-                Índice consolidado considerando filtros aplicados
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {filteredLayerHealth.map((l) => (
-                  <HealthRing key={l.layer} value={l.healthScore} size={60} strokeWidth={5} label={LAYER_LABELS[l.layer]} />
-                ))}
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Card sx={{ mt: 2 }}>
-        <CardContent sx={{ p: 2.5 }}>
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={1.5}
-            justifyContent="space-between"
-            alignItems={{ xs: 'stretch', md: 'center' }}
-            sx={{ mb: 2 }}
+      {/* Donut charts */}
+      <Grid container spacing={2} sx={{ mb: 2.5 }}>
+        <Grid item xs={12} md={6}>
+          <Card
+            sx={{ cursor: 'pointer', '&:hover': { boxShadow: 6 }, transition: 'box-shadow 0.2s' }}
+            onClick={() => navigate('/lineage')}
           >
-            <Box>
-              <Typography variant="h6">Tendências detalhadas</Typography>
-              <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                Comparativo do período atual vs período anterior
-              </Typography>
-            </Box>
+            <CardContent sx={{ p: 2.5 }}>
+              <Typography variant="h6" sx={{ mb: 1 }}>Sucesso dos Pipelines</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                <Box sx={{ width: 140, height: 140, position: 'relative' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={[
+                        { name: 'Sucesso', value: pipelineDonut.success },
+                        { name: 'Falha', value: pipelineDonut.fail },
+                      ]} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65} strokeWidth={0}>
+                        <Cell fill={DONUT_COLORS.success} />
+                        <Cell fill={DONUT_COLORS.fail} />
+                      </Pie>
+                      <RechartsTooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
+                    <Typography variant="h5" fontWeight={800} sx={{ lineHeight: 1, color: pipelineDonut.pct >= 80 ? DONUT_COLORS.success : DONUT_COLORS.fail }}>
+                      {pipelineDonut.pct}%
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box>
+                  <Stack spacing={0.5}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: DONUT_COLORS.success }} />
+                      <Typography variant="body2">Sucesso: {pipelineDonut.success}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: DONUT_COLORS.fail }} />
+                      <Typography variant="body2">Falha: {pipelineDonut.fail}</Typography>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                      Clique para ver Linhagem de Dados
+                    </Typography>
+                  </Stack>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-            <FormControl size="small" sx={{ minWidth: 260 }}>
-              <InputLabel id="metric-select-label">Métrica</InputLabel>
-              <Select
-                labelId="metric-select-label"
-                value={selectedMetric}
-                label="Métrica"
-                onChange={(event) => setSelectedMetric(event.target.value)}
-              >
-                {filteredKpis.map((kpi) => (
-                  <MenuItem key={kpi.label} value={kpi.label}>
-                    {kpi.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
-
-          {selectedTrend.length === 0 ? (
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-              Nenhuma série disponível para os filtros atuais.
-            </Typography>
-          ) : (
-            <Box sx={{ height: 280 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={selectedTrend} margin={{ top: 8, right: 10, left: -15, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                  <XAxis dataKey="label" tick={{ fill: theme.palette.text.secondary, fontSize: 11 }} />
-                  <YAxis tick={{ fill: theme.palette.text.secondary, fontSize: 11 }} />
-                  <RechartsTooltip
-                    contentStyle={{
-                      backgroundColor: theme.palette.background.paper,
-                      border: `1px solid ${theme.palette.divider}`,
-                      borderRadius: 8,
-                    }}
-                  />
-                  <Legend />
-                  <Line type="monotone" dataKey="atual" name="Período atual" stroke={theme.palette.secondary.main} strokeWidth={2.4} dot={false} />
-                  <Line type="monotone" dataKey="anterior" name="Período anterior" stroke={theme.palette.text.disabled} strokeDasharray="4 2" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+        <Grid item xs={12} md={6}>
+          <Card
+            sx={{ cursor: 'pointer', '&:hover': { boxShadow: 6 }, transition: 'box-shadow 0.2s' }}
+            onClick={() => navigate('/data-quality')}
+          >
+            <CardContent sx={{ p: 2.5 }}>
+              <Typography variant="h6" sx={{ mb: 1 }}>Testes de Qualidade</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                <Box sx={{ width: 140, height: 140, position: 'relative' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={[
+                        { name: 'Sucesso', value: qualityDonut.success },
+                        { name: 'Falha', value: qualityDonut.fail },
+                      ]} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65} strokeWidth={0}>
+                        <Cell fill={DONUT_COLORS.success} />
+                        <Cell fill={DONUT_COLORS.fail} />
+                      </Pie>
+                      <RechartsTooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
+                    <Typography variant="h5" fontWeight={800} sx={{ lineHeight: 1, color: qualityDonut.pct >= 80 ? DONUT_COLORS.success : DONUT_COLORS.fail }}>
+                      {qualityDonut.pct}%
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box>
+                  <Stack spacing={0.5}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: DONUT_COLORS.success }} />
+                      <Typography variant="body2">Sucesso: {qualityDonut.success}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: DONUT_COLORS.fail }} />
+                      <Typography variant="body2">Falha: {qualityDonut.fail}</Typography>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                      Clique para ver Qualidade de Dados
+                    </Typography>
+                  </Stack>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       <Card sx={{ mt: 2 }}>
         <CardContent sx={{ p: 2.5 }}>

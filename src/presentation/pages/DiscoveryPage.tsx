@@ -76,6 +76,26 @@ const TREE_ICON_MAP: Record<string, ReactElement> = {
 const LEFT_WIDTH = 250;
 const RIGHT_WIDTH = 340;
 
+type TreeFilterSpec = { service?: string; type?: ArtifactType; pathContains?: string };
+
+const TREE_NODE_FILTER_MAP: Record<string, TreeFilterSpec> = {
+  snowflake: { service: "Snowflake" },
+  "sf-analytics": { service: "Snowflake", pathContains: "ANALYTICS_DB" },
+  "sf-mart": { service: "Snowflake", pathContains: "ANALYTICS_MART5" },
+  postgresql: { service: "PostgreSQL" },
+  "pg-enterprise": { service: "PostgreSQL", pathContains: "enterprise_dw" },
+  "pg-catalog": { service: "PostgreSQL", pathContains: "catalog" },
+  oracle: { service: "Oracle" },
+  "or-legacy": { service: "Oracle", pathContains: "EBV_PROD" },
+  athena: { service: "Athena" },
+  "at-raw": { service: "Athena", pathContains: "raw" },
+  airflow: { service: "Airflow" },
+  "conn-pg": { type: "CONNECTOR", service: "PostgreSQL" },
+  "conn-bq": { type: "CONNECTOR", service: "BigQuery" },
+  "q-rules": { type: "QUALITY_RULE" },
+  "a-active": { type: "ALERT" },
+};
+
 function TreeNodeItem({ node, depth, onSelect, activeId }: {
   node: TreeNode; depth: number; onSelect: (id: string) => void; activeId: string;
 }) {
@@ -361,6 +381,19 @@ export default function DiscoveryPage() {
     if (filters.tag) list = list.filter((r) => r.tags.includes(filters.tag));
     if (filters.certification) list = list.filter((r) => r.certification === filters.certification);
     if (filters.service) list = list.filter((r) => r.service === filters.service);
+    if (filters.area) list = list.filter((r) => r.domain === filters.area);
+
+    if (activeTreeNode) {
+      const spec = TREE_NODE_FILTER_MAP[activeTreeNode];
+      if (spec) {
+        list = list.filter((r) => {
+          if (spec.type && r.type !== spec.type) return false;
+          if (spec.service && r.service !== spec.service) return false;
+          if (spec.pathContains && !r.path.toLowerCase().includes(spec.pathContains.toLowerCase())) return false;
+          return true;
+        });
+      }
+    }
 
     const sorted = [...list];
     const dir = sortDirection === "asc" ? 1 : -1;
@@ -368,7 +401,7 @@ export default function DiscoveryPage() {
     else if (sortMode === "popularity") sorted.sort((a, b) => (b.stats.queries - a.stats.queries) * dir);
     else sorted.sort((a, b) => a.name.localeCompare(b.name) * dir);
     return sorted;
-  }, [results, filters, sortMode, sortDirection]);
+  }, [results, filters, sortMode, sortDirection, activeTreeNode]);
 
   const selectedItem = useMemo(
     () => (selectedId ? results.find((r) => r.id === selectedId) ?? null : null),
@@ -477,6 +510,15 @@ export default function DiscoveryPage() {
                 onChange={(e: SelectChangeEvent) => dispatch(setDiscoveryFilter({ key: "service", value: e.target.value }))}>
                 <MenuItem value=""><em>Todos</em></MenuItem>
                 {uniqueServices.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <InputLabel sx={{ fontSize: "0.75rem" }}>Área</InputLabel>
+              <Select value={filters.area} label="Área" sx={{ fontSize: "0.75rem", height: 32 }}
+                onChange={(e: SelectChangeEvent) => dispatch(setDiscoveryFilter({ key: "area", value: e.target.value }))}>
+                <MenuItem value=""><em>Todas</em></MenuItem>
+                {uniqueDomains.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
               </Select>
             </FormControl>
 

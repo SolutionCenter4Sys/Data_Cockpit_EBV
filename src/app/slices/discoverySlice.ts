@@ -12,6 +12,7 @@ export interface DiscoveryFilters {
   certification: string;
   service: string;
   serviceType: string;
+  area: string;
 }
 
 interface DiscoveryState {
@@ -347,7 +348,7 @@ export const searchArtifacts = createAsyncThunk("discovery/search", async (term:
     .sort((a, b) => b.relevance - a.relevance);
 });
 
-const emptyFilters: DiscoveryFilters = { domain: "", owner: "", tier: "", tag: "", certification: "", service: "", serviceType: "" };
+const emptyFilters: DiscoveryFilters = { domain: "", owner: "", tier: "", tag: "", certification: "", service: "", serviceType: "", area: "" };
 
 const discoverySlice = createSlice({
   name: "discovery",
