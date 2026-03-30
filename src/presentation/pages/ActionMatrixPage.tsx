@@ -118,7 +118,7 @@ export default function ActionMatrixPage() {
           <Typography variant="h5" fontWeight={700}>Matriz de Acionamento</Typography>
           <Typography variant="body2" color="text.secondary">Quality → Alerta → Ação automática → Saída (ServiceNow, Slack, Teams, Email)</Typography>
         </Box>
-        <Button variant="contained" size="small" startIcon={<AddCircleOutlineIcon />} onClick={openCreate}>Nova Regra</Button>
+        <Button variant="contained" size="small" startIcon={<AddCircleOutlineIcon />} onClick={openCreate}>Novo Alerta</Button>
       </Box>
 
       <Grid container spacing={2} mb={3}>
@@ -225,7 +225,7 @@ export default function ActionMatrixPage() {
       </Paper>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editingRule ? "Editar Regra de Acionamento" : "Nova Regra de Acionamento"}</DialogTitle>
+        <DialogTitle>{editingRule ? "Editar Alerta" : "Novo Alerta"}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField label="Tipo de Anomalia" fullWidth size="small" value={form.anomalyType} onChange={(e) => setForm({ ...form, anomalyType: e.target.value })} placeholder="Ex: Score Zerado, Batch com Atraso > 30min" />
