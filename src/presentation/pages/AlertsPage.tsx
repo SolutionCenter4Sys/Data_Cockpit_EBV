@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Grid,
@@ -25,6 +26,7 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
@@ -34,7 +36,7 @@ import { useAppDispatch, useAppSelector } from '../../app/store';
 import { fetchAlerts, acknowledgeAlert, resolveAlert } from '../../app/slices/alertSlice';
 import SeverityChip from '../components/SeverityChip';
 import PageSkeleton from '../components/PageSkeleton';
-import type { Alert, SeverityLevel } from '../../domain/entities';
+import type { Alert, PipelineStage, SeverityLevel, DataLayer } from '../../domain/entities';
 
 const STATUS_TABS = ['Todos', 'Abertos', 'Reconhecidos', 'Resolvidos'];
 const STATUS_MAP: Record<number, Alert['status'] | undefined> = {
@@ -43,6 +45,15 @@ const STATUS_MAP: Record<number, Alert['status'] | undefined> = {
 const LAYER_LABELS: Record<string, string> = {
   INGESTION: 'Ingestão', TRUSTED: 'Trusted', ANALYTICS: 'Analytics',
 };
+
+const STAGE_FILTER_OPTIONS: { key: PipelineStage; label: string; color: string; layers: DataLayer[] }[] = [
+  { key: 'INGESTAO', label: 'Ingestão', color: '#1565C0', layers: ['INGESTION'] },
+  { key: 'GOVERNANCA', label: 'Governança', color: '#6A1B9A', layers: ['TRUSTED'] },
+  { key: 'DW', label: 'Data Warehouse', color: '#00695C', layers: ['TRUSTED'] },
+  { key: 'ANALYTICS_STAGE', label: 'Analytics', color: '#E65100', layers: ['ANALYTICS'] },
+  { key: 'DELIVERY', label: 'Delivery', color: '#283593', layers: ['INGESTION', 'TRUSTED', 'ANALYTICS'] },
+  { key: 'PRODUTOS', label: 'Produtos', color: '#AD1457', layers: ['ANALYTICS'] },
+];
 
 const SEVERITY_PRIORITY: Record<SeverityLevel, number> = {
   CRITICAL: 5,
@@ -195,17 +206,41 @@ function AlertRow({
 export default function AlertsPage() {
   const dispatch = useAppDispatch();
   const theme = useTheme();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { alerts, loading } = useAppSelector((s) => s.alerts);
   const [tab, setTab] = useState(0);
   const [notificationLog, setNotificationLog] = useState<string[]>([]);
+
+  const stageParam = searchParams.get('stage') as PipelineStage | null;
+  const [stageFilter, setStageFilter] = useState<PipelineStage | ''>(stageParam ?? '');
 
   useEffect(() => {
     dispatch(fetchAlerts());
   }, [dispatch]);
 
-  const openAlerts = alerts.filter((a) => a.status === 'OPEN');
-  const criticalAlerts = alerts.filter((a) => a.status === 'OPEN' && a.severity === 'CRITICAL');
-  const filtered = tab === 0 ? alerts : alerts.filter((a) => a.status === STATUS_MAP[tab]);
+  useEffect(() => {
+    if (stageParam) setStageFilter(stageParam);
+  }, [stageParam]);
+
+  const handleStageFilter = (stage: PipelineStage | ''): void => {
+    setStageFilter(stage);
+    if (stage) {
+      setSearchParams({ stage });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  const stageFilteredAlerts = useMemo(() => {
+    if (!stageFilter) return alerts;
+    const opt = STAGE_FILTER_OPTIONS.find((s) => s.key === stageFilter);
+    if (!opt) return alerts;
+    return alerts.filter((a) => opt.layers.includes(a.layer));
+  }, [alerts, stageFilter]);
+
+  const openAlerts = stageFilteredAlerts.filter((a) => a.status === 'OPEN');
+  const criticalAlerts = stageFilteredAlerts.filter((a) => a.status === 'OPEN' && a.severity === 'CRITICAL');
+  const filtered = tab === 0 ? stageFilteredAlerts : stageFilteredAlerts.filter((a) => a.status === STATUS_MAP[tab]);
 
   const groupedIncidents = useMemo<GroupedIncident[]>(() => {
     const map = new Map<string, GroupedIncident>();
@@ -267,10 +302,10 @@ export default function AlertsPage() {
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {[
-          { label: 'Críticos', value: alerts.filter((a) => a.severity === 'CRITICAL' && a.status === 'OPEN').length, color: theme.palette.error.main },
-          { label: 'Altos', value: alerts.filter((a) => a.severity === 'HIGH' && a.status === 'OPEN').length, color: theme.palette.warning.main },
+          { label: 'Críticos', value: stageFilteredAlerts.filter((a) => a.severity === 'CRITICAL' && a.status === 'OPEN').length, color: theme.palette.error.main },
+          { label: 'Altos', value: stageFilteredAlerts.filter((a) => a.severity === 'HIGH' && a.status === 'OPEN').length, color: theme.palette.warning.main },
           { label: 'Abertos', value: openAlerts.length, color: '#FBBF24' },
-          { label: 'Total Alertas', value: alerts.length, color: theme.palette.text.secondary },
+          { label: 'Total Alertas', value: stageFilteredAlerts.length, color: theme.palette.text.secondary },
         ].map((k) => (
           <Grid item xs={6} md={3} key={k.label}>
             <Card>
@@ -282,6 +317,39 @@ export default function AlertsPage() {
           </Grid>
         ))}
       </Grid>
+
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+            <FilterAltIcon fontSize="small" sx={{ color: theme.palette.text.disabled }} />
+            <Typography variant="body2" sx={{ fontWeight: 600, mr: 1 }}>Área da Esteira:</Typography>
+            <Chip
+              label="Todas"
+              size="small"
+              variant={stageFilter === '' ? 'filled' : 'outlined'}
+              color={stageFilter === '' ? 'primary' : 'default'}
+              onClick={() => handleStageFilter('')}
+              sx={{ fontSize: '0.72rem' }}
+            />
+            {STAGE_FILTER_OPTIONS.map((opt) => (
+              <Chip
+                key={opt.key}
+                label={opt.label}
+                size="small"
+                variant={stageFilter === opt.key ? 'filled' : 'outlined'}
+                onClick={() => handleStageFilter(opt.key)}
+                sx={{
+                  fontSize: '0.72rem',
+                  borderColor: opt.color,
+                  color: stageFilter === opt.key ? '#fff' : opt.color,
+                  backgroundColor: stageFilter === opt.key ? opt.color : 'transparent',
+                  '&:hover': { backgroundColor: `${opt.color}22` },
+                }}
+              />
+            ))}
+          </Stack>
+        </CardContent>
+      </Card>
 
       <Grid container spacing={2}>
         <Grid item xs={12} md={8}>
@@ -295,7 +363,7 @@ export default function AlertsPage() {
                 {STATUS_TABS.map((label, i) => (
                   <Tab
                     key={label}
-                    label={`${label}${i === 0 ? ` (${alerts.length})` : i === 1 ? ` (${openAlerts.length})` : ''}`}
+                    label={`${label}${i === 0 ? ` (${stageFilteredAlerts.length})` : i === 1 ? ` (${openAlerts.length})` : ''}`}
                     sx={{ fontSize: '0.8rem', color: theme.palette.text.secondary,
                       '&.Mui-selected': { color: theme.palette.text.primary } }}
                   />

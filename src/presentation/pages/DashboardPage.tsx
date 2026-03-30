@@ -239,7 +239,10 @@ export default function DashboardPage() {
                     border: `1px solid ${color}22`,
                     background: `linear-gradient(135deg, ${color}08, transparent)`,
                     height: '100%',
-                  }}>
+                    cursor: 'pointer',
+                    transition: 'box-shadow 0.2s, transform 0.15s',
+                    '&:hover': { boxShadow: 4, transform: 'translateY(-2px)' },
+                  }} onClick={() => navigate(`/alerts?stage=${stage.stage}`)}>
                     <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                         <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color, boxShadow: `0 0 6px ${color}88` }} />
