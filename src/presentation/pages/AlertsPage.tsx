@@ -17,39 +17,24 @@ import {
   CircularProgress,
   Tabs,
   Tab,
-  Divider,
   Tooltip,
   useTheme,
   IconButton,
   Stack,
-  Switch,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Accordion,
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material/Select';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FlagCircleOutlinedIcon from '@mui/icons-material/FlagCircleOutlined';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { fetchAlerts, fetchAlertRules, acknowledgeAlert, resolveAlert } from '../../app/slices/alertSlice';
+import { fetchAlerts, acknowledgeAlert, resolveAlert } from '../../app/slices/alertSlice';
 import SeverityChip from '../components/SeverityChip';
 import PageSkeleton from '../components/PageSkeleton';
-import type { Alert, AlertRule, DataLayer, SeverityLevel } from '../../domain/entities';
+import type { Alert, SeverityLevel } from '../../domain/entities';
 
 const STATUS_TABS = ['Todos', 'Abertos', 'Reconhecidos', 'Resolvidos'];
 const STATUS_MAP: Record<number, Alert['status'] | undefined> = {
@@ -75,23 +60,6 @@ const ESCALATION_SLA_MINUTES: Record<SeverityLevel, number> = {
   HEALTHY: 180,
 };
 
-interface RuleFormState {
-  id: string;
-  name: string;
-  metric: string;
-  operator: string;
-  threshold: number;
-  severity: SeverityLevel;
-  layer: DataLayer;
-  condition: string;
-  enabled: boolean;
-  channel: string;
-  mention: string;
-  rateLimitPerHour: number;
-  escalationMinutes: number;
-  triggerCount: number;
-}
-
 interface GroupedIncident {
   id: string;
   affectedProcess: string;
@@ -106,40 +74,6 @@ interface EscalationView {
   level: 0 | 1 | 2;
   target: string;
 }
-
-const createRuleFromAlertRule = (rule: AlertRule): RuleFormState => ({
-  id: rule.id,
-  name: rule.name,
-  metric: 'score_zerado',
-  operator: '>',
-  threshold: rule.threshold,
-  severity: rule.severity,
-  layer: rule.layer,
-  condition: rule.condition,
-  enabled: rule.enabled,
-  channel: 'canal-dados-monitoramento',
-  mention: '@responsavel-operacao',
-  rateLimitPerHour: 6,
-  escalationMinutes: ESCALATION_SLA_MINUTES[rule.severity],
-  triggerCount: rule.triggerCount,
-});
-
-const createEmptyRule = (): RuleFormState => ({
-  id: '',
-  name: '',
-  metric: 'score_zerado',
-  operator: '>',
-  threshold: 2,
-  severity: 'HIGH',
-  layer: 'ANALYTICS',
-  condition: 'scoreZeroPercent > 2',
-  enabled: true,
-  channel: 'canal-dados-monitoramento',
-  mention: '@responsavel-operacao',
-  rateLimitPerHour: 6,
-  escalationMinutes: 15,
-  triggerCount: 0,
-});
 
 function AlertRow({
   alert,
@@ -261,22 +195,13 @@ function AlertRow({
 export default function AlertsPage() {
   const dispatch = useAppDispatch();
   const theme = useTheme();
-  const { alerts, rules, loading } = useAppSelector((s) => s.alerts);
+  const { alerts, loading } = useAppSelector((s) => s.alerts);
   const [tab, setTab] = useState(0);
-  const [rulesState, setRulesState] = useState<RuleFormState[]>([]);
-  const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
-  const [ruleDraft, setRuleDraft] = useState<RuleFormState>(createEmptyRule());
-  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [notificationLog, setNotificationLog] = useState<string[]>([]);
 
   useEffect(() => {
     dispatch(fetchAlerts());
-    dispatch(fetchAlertRules());
   }, [dispatch]);
-
-  useEffect(() => {
-    setRulesState(rules.map(createRuleFromAlertRule));
-  }, [rules]);
 
   const openAlerts = alerts.filter((a) => a.status === 'OPEN');
   const criticalAlerts = alerts.filter((a) => a.status === 'OPEN' && a.severity === 'CRITICAL');
@@ -326,60 +251,6 @@ export default function AlertsPage() {
   }, [openAlerts]);
 
   if (loading && alerts.length === 0) return <PageSkeleton />;
-
-  const openNewRuleDialog = (): void => {
-    setEditingRuleId(null);
-    setRuleDraft(createEmptyRule());
-    setIsRuleDialogOpen(true);
-  };
-
-  const openEditRuleDialog = (rule: RuleFormState): void => {
-    setEditingRuleId(rule.id);
-    setRuleDraft(rule);
-    setIsRuleDialogOpen(true);
-  };
-
-  const handleRuleField = <K extends keyof RuleFormState>(field: K, value: RuleFormState[K]): void => {
-    setRuleDraft((current) => ({ ...current, [field]: value }));
-  };
-
-  const handleSeverityChange = (event: SelectChangeEvent<string>): void => {
-    const value = event.target.value;
-    if (value === 'CRITICAL' || value === 'HIGH' || value === 'MEDIUM' || value === 'LOW' || value === 'HEALTHY') {
-      handleRuleField('severity', value);
-    }
-  };
-
-  const handleLayerChange = (event: SelectChangeEvent<string>): void => {
-    const value = event.target.value;
-    if (value === 'INGESTION' || value === 'TRUSTED' || value === 'ANALYTICS') {
-      handleRuleField('layer', value);
-    }
-  };
-
-  const saveRule = (): void => {
-    if (!ruleDraft.name.trim()) return;
-
-    if (editingRuleId) {
-      setRulesState((current) =>
-        current.map((rule) => (rule.id === editingRuleId ? { ...ruleDraft, id: editingRuleId } : rule))
-      );
-    } else {
-      const nextId = `RUL-${Date.now().toString().slice(-5)}`;
-      setRulesState((current) => [{ ...ruleDraft, id: nextId }, ...current]);
-    }
-    setIsRuleDialogOpen(false);
-  };
-
-  const deleteRule = (ruleId: string): void => {
-    setRulesState((current) => current.filter((rule) => rule.id !== ruleId));
-  };
-
-  const toggleRule = (ruleId: string): void => {
-    setRulesState((current) =>
-      current.map((rule) => (rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule))
-    );
-  };
 
   const notifyAlert = (alert: Alert): void => {
     const message = `[${new Date().toLocaleTimeString('pt-BR')}] ${alert.severity} | ${alert.title} -> ${alert.affectedProcess}`;
@@ -460,67 +331,6 @@ export default function AlertsPage() {
 
         <Grid item xs={12} md={4}>
           <Card>
-            <CardContent sx={{ p: 2.5 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="h6">Regras de Acionamento (CRUD)</Typography>
-                <Button
-                  size="small"
-                  startIcon={<AddCircleOutlineIcon fontSize="small" />}
-                  onClick={openNewRuleDialog}
-                  variant="contained"
-                >
-                  Nova regra
-                </Button>
-              </Stack>
-
-              {rulesState.map((rule, i) => (
-                <Box key={rule.id}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.8, gap: 1 }}>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{rule.name}</Typography>
-                      <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block' }}>
-                        {rule.metric} {rule.operator} {rule.threshold} ({rule.condition})
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: 'block' }}>
-                        Canal: {rule.channel} · Rate limit: {rule.rateLimitPerHour}/h
-                      </Typography>
-                    </Box>
-                    <Stack alignItems="flex-end" spacing={0.5}>
-                      <SeverityChip severity={rule.severity} />
-                      <Stack direction="row" spacing={0.5} alignItems="center">
-                        <Switch size="small" checked={rule.enabled} onChange={() => toggleRule(rule.id)} />
-                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                          {rule.enabled ? 'Ativa' : 'Inativa'}
-                        </Typography>
-                      </Stack>
-                      <Stack direction="row" spacing={0.5}>
-                        <IconButton
-                          size="small"
-                          aria-label={`Editar regra ${rule.id}`}
-                          onClick={() => openEditRuleDialog(rule)}
-                        >
-                          <EditOutlinedIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          aria-label={`Excluir regra ${rule.id}`}
-                          onClick={() => deleteRule(rule.id)}
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </Stack>
-                      <Typography variant="caption" sx={{ color: theme.palette.text.disabled }}>
-                        {rule.triggerCount}x disparado
-                      </Typography>
-                    </Stack>
-                  </Box>
-                  {i < rulesState.length - 1 && <Divider sx={{ my: 1.2 }} />}
-                </Box>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card sx={{ mt: 2 }}>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="h6" sx={{ mb: 1.5 }}>Incidentes agrupados</Typography>
               {groupedIncidents.length === 0 ? (
@@ -605,126 +415,6 @@ export default function AlertsPage() {
         </Grid>
       </Grid>
 
-      <Dialog open={isRuleDialogOpen} onClose={() => setIsRuleDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>{editingRuleId ? 'Editar regra' : 'Nova regra de alerta'}</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={1.5} sx={{ mt: 0.3 }}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Nome da regra"
-                value={ruleDraft.name}
-                onChange={(event) => handleRuleField('name', event.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Métrica"
-                value={ruleDraft.metric}
-                onChange={(event) => handleRuleField('metric', event.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                size="small"
-                type="number"
-                label="Threshold"
-                value={ruleDraft.threshold}
-                onChange={(event) => handleRuleField('threshold', Number(event.target.value))}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel id="rule-severity-label">Severidade</InputLabel>
-                <Select
-                  labelId="rule-severity-label"
-                  label="Severidade"
-                  value={ruleDraft.severity}
-                  onChange={handleSeverityChange}
-                >
-                  <MenuItem value="CRITICAL">CRITICAL</MenuItem>
-                  <MenuItem value="HIGH">HIGH</MenuItem>
-                  <MenuItem value="MEDIUM">MEDIUM</MenuItem>
-                  <MenuItem value="LOW">LOW</MenuItem>
-                  <MenuItem value="HEALTHY">HEALTHY</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel id="rule-layer-label">Camada</InputLabel>
-                <Select
-                  labelId="rule-layer-label"
-                  label="Camada"
-                  value={ruleDraft.layer}
-                  onChange={handleLayerChange}
-                >
-                  <MenuItem value="INGESTION">INGESTION</MenuItem>
-                  <MenuItem value="TRUSTED">TRUSTED</MenuItem>
-                  <MenuItem value="ANALYTICS">ANALYTICS</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Condição textual"
-                value={ruleDraft.condition}
-                onChange={(event) => handleRuleField('condition', event.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Canal mensageria"
-                value={ruleDraft.channel}
-                onChange={(event) => handleRuleField('channel', event.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Menção padrão"
-                value={ruleDraft.mention}
-                onChange={(event) => handleRuleField('mention', event.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                size="small"
-                type="number"
-                label="Rate limit por hora"
-                value={ruleDraft.rateLimitPerHour}
-                onChange={(event) => handleRuleField('rateLimitPerHour', Number(event.target.value))}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                size="small"
-                type="number"
-                label="Escalonar após (min)"
-                value={ruleDraft.escalationMinutes}
-                onChange={(event) => handleRuleField('escalationMinutes', Number(event.target.value))}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsRuleDialogOpen(false)}>Cancelar</Button>
-          <Button onClick={saveRule} variant="contained">
-            {editingRuleId ? 'Salvar alterações' : 'Criar regra'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }
