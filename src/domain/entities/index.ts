@@ -18,6 +18,28 @@ export interface StageHealth {
   lastUpdated: string;
 }
 
+export type AssetTier = 'Tier1' | 'Tier2' | 'Tier3';
+export type AssetHealth = 'healthy' | 'warning' | 'error';
+export type AssetCertification = 'certified' | 'draft' | 'none';
+
+export interface AssetOwner {
+  name: string;
+  avatarColor: string;
+}
+
+export interface AssetStats {
+  queries: number;
+  columns: number;
+  incidents: number;
+  tests: number;
+  rows?: number;
+}
+
+export interface AssetLineage {
+  upstreamCount: number;
+  downstreamCount: number;
+}
+
 export interface DiscoveryResult {
   id: string;
   type: 'TABLE' | 'COLUMN' | 'QUALITY_RULE' | 'ALERT' | 'CONNECTOR' | 'PIPELINE';
@@ -26,6 +48,31 @@ export interface DiscoveryResult {
   source: string;
   relevance: number;
   metadata: Record<string, string>;
+  path: string;
+  owners: AssetOwner[];
+  tier: AssetTier;
+  healthStatus: AssetHealth;
+  tags: string[];
+  glossaryTerms: string[];
+  stats: AssetStats;
+  lineage: AssetLineage;
+  domain: string;
+  certification: AssetCertification;
+  service: string;
+}
+
+export interface TreeCategory {
+  id: string;
+  label: string;
+  icon: string;
+  children: TreeNode[];
+}
+
+export interface TreeNode {
+  id: string;
+  label: string;
+  count: number;
+  children?: TreeNode[];
 }
 
 // ── EP-01: Dashboard ──────────────────────────────────────────────────────────
