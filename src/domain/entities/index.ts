@@ -5,6 +5,29 @@ export type ProcessStatus = 'RUNNING' | 'SUCCESS' | 'FAILED' | 'WARNING' | 'PEND
 export type DataLayer = 'INGESTION' | 'TRUSTED' | 'ANALYTICS';
 export type TrendDirection = 'UP' | 'DOWN' | 'STABLE';
 
+export type PipelineStage = 'INGESTAO' | 'GOVERNANCA' | 'DW' | 'ANALYTICS_STAGE' | 'DELIVERY' | 'PRODUTOS';
+
+export interface StageHealth {
+  stage: PipelineStage;
+  label: string;
+  owner: string;
+  healthScore: number;
+  activeAlerts: number;
+  qualityChecks: number;
+  qualityPassing: number;
+  lastUpdated: string;
+}
+
+export interface DiscoveryResult {
+  id: string;
+  type: 'TABLE' | 'COLUMN' | 'QUALITY_RULE' | 'ALERT' | 'CONNECTOR' | 'PIPELINE';
+  name: string;
+  description: string;
+  source: string;
+  relevance: number;
+  metadata: Record<string, string>;
+}
+
 // ── EP-01: Dashboard ──────────────────────────────────────────────────────────
 
 export interface GlobalHealthKpi {

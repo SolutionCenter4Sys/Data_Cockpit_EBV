@@ -35,6 +35,62 @@ const LAYER_LABELS: Record<string, string> = {
 };
 const LAYER_ORDER = ['INGESTION', 'TRUSTED', 'ANALYTICS'];
 
+interface E2ENode {
+  id: string;
+  label: string;
+  stage: string;
+  color: string;
+  x: number;
+  y: number;
+  status: 'ok' | 'warn' | 'error';
+}
+
+interface E2EEdge {
+  from: string;
+  to: string;
+  animated?: boolean;
+}
+
+const E2E_NODES: E2ENode[] = [
+  { id: 'src-oracle', label: 'Oracle Legado', stage: 'Fontes', color: '#78909C', x: 30, y: 60, status: 'ok' },
+  { id: 'src-kafka', label: 'Kafka Events', stage: 'Fontes', color: '#78909C', x: 30, y: 140, status: 'ok' },
+  { id: 'src-api', label: 'API Rest', stage: 'Fontes', color: '#78909C', x: 30, y: 220, status: 'warn' },
+  { id: 'ing-etl', label: 'ETL-047 FFT', stage: 'Ingestão', color: '#1565C0', x: 220, y: 60, status: 'ok' },
+  { id: 'ing-cdc', label: 'CDC Stream', stage: 'Ingestão', color: '#1565C0', x: 220, y: 140, status: 'ok' },
+  { id: 'ing-batch', label: 'Batch Load', stage: 'Ingestão', color: '#1565C0', x: 220, y: 220, status: 'error' },
+  { id: 'gov-golden', label: 'Golden Record', stage: 'Governança', color: '#6A1B9A', x: 420, y: 100, status: 'ok' },
+  { id: 'gov-mdm', label: 'MDM Engine', stage: 'Governança', color: '#6A1B9A', x: 420, y: 200, status: 'ok' },
+  { id: 'dw-bronze', label: 'Bronze Layer', stage: 'DW', color: '#00695C', x: 620, y: 50, status: 'ok' },
+  { id: 'dw-silver', label: 'Silver Layer', stage: 'DW', color: '#00695C', x: 620, y: 140, status: 'ok' },
+  { id: 'dw-gold', label: 'Gold Layer', stage: 'DW', color: '#00695C', x: 620, y: 230, status: 'warn' },
+  { id: 'an-score', label: 'Score Crédito', stage: 'Analytics', color: '#E65100', x: 820, y: 80, status: 'ok' },
+  { id: 'an-fraude', label: 'Score Fraude', stage: 'Analytics', color: '#E65100', x: 820, y: 180, status: 'error' },
+  { id: 'del-batch', label: 'Batch Delivery', stage: 'Delivery', color: '#283593', x: 1010, y: 80, status: 'ok' },
+  { id: 'del-api', label: 'API Gateway', stage: 'Delivery', color: '#283593', x: 1010, y: 180, status: 'ok' },
+  { id: 'prod-portal', label: 'Portal Online', stage: 'Produtos', color: '#AD1457', x: 1190, y: 80, status: 'ok' },
+  { id: 'prod-app', label: 'App Mobile', stage: 'Produtos', color: '#AD1457', x: 1190, y: 180, status: 'ok' },
+];
+
+const E2E_EDGES: E2EEdge[] = [
+  { from: 'src-oracle', to: 'ing-etl' },
+  { from: 'src-kafka', to: 'ing-cdc', animated: true },
+  { from: 'src-api', to: 'ing-batch' },
+  { from: 'ing-etl', to: 'gov-golden' },
+  { from: 'ing-cdc', to: 'gov-golden' },
+  { from: 'ing-batch', to: 'gov-mdm' },
+  { from: 'gov-golden', to: 'dw-bronze' },
+  { from: 'gov-mdm', to: 'dw-bronze' },
+  { from: 'dw-bronze', to: 'dw-silver' },
+  { from: 'dw-silver', to: 'dw-gold' },
+  { from: 'dw-gold', to: 'an-score' },
+  { from: 'dw-gold', to: 'an-fraude' },
+  { from: 'an-score', to: 'del-batch' },
+  { from: 'an-fraude', to: 'del-api' },
+  { from: 'del-batch', to: 'prod-portal' },
+  { from: 'del-api', to: 'prod-app' },
+  { from: 'del-api', to: 'prod-portal' },
+];
+
 const MOCK_BOTTLENECKS: BottleneckAnalysis[] = [
   { nodeId: "n-etl-047", nodeName: "ETL-047 FFT Copy", layer: "INGESTION", avgLatencyMs: 4500, volumePerHour: 125000, severity: "HIGH", suggestion: "Considerar particionamento do arquivo FFT ou processamento paralelo" },
   { nodeId: "n-oracle-sync", nodeName: "Oracle Legacy Sync", layer: "INGESTION", avgLatencyMs: 8900, volumePerHour: 45000, severity: "CRITICAL", suggestion: "Migrar para CDC (Change Data Capture) em vez de full dump periódico" },
@@ -285,8 +341,71 @@ export default function LineagePage() {
     popup.print();
   };
 
+  const e2eNodeMap = E2E_NODES.reduce<Record<string, E2ENode>>((acc, n) => { acc[n.id] = n; return acc; }, {});
+
   return (
     <Box>
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ p: 2.5 }}>
+          <Typography variant="h6" sx={{ mb: 0.5 }}>Mapa Visual — Jornada End-to-End do Dado</Typography>
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 2 }}>
+            Fontes → Ingestão → Governança → DW → Analytics → Delivery → Produtos
+          </Typography>
+          <Box sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, p: 1, overflow: 'auto' }}>
+            <svg width={1380} height={290} role="img" aria-label="Mapa end-to-end de linhagem">
+              {(() => {
+                const stages = ['Fontes', 'Ingestão', 'Governança', 'DW', 'Analytics', 'Delivery', 'Produtos'];
+                const stageColors = ['#78909C', '#1565C0', '#6A1B9A', '#00695C', '#E65100', '#283593', '#AD1457'];
+                return stages.map((s, i) => (
+                  <text key={s} x={30 + i * 195} y={18} fill={stageColors[i]} style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' as const }}>{s}</text>
+                ));
+              })()}
+
+              {E2E_EDGES.map((edge) => {
+                const from = e2eNodeMap[edge.from];
+                const to = e2eNodeMap[edge.to];
+                if (!from || !to) return null;
+                const x1 = from.x + 150;
+                const y1 = from.y + 20;
+                const x2 = to.x;
+                const y2 = to.y + 20;
+                const mx = (x1 + x2) / 2;
+                return (
+                  <path
+                    key={`${edge.from}-${edge.to}`}
+                    d={`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`}
+                    fill="none"
+                    stroke={theme.palette.text.disabled}
+                    strokeWidth={1.5}
+                    strokeDasharray={edge.animated ? '6 3' : undefined}
+                    opacity={0.5}
+                    markerEnd="url(#arrowhead)"
+                  />
+                );
+              })}
+
+              <defs>
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill={theme.palette.text.disabled} opacity={0.6} />
+                </marker>
+              </defs>
+
+              {E2E_NODES.map((node) => {
+                const statusColor = node.status === 'ok' ? '#10B981' : node.status === 'warn' ? '#F5A623' : '#E31837';
+                return (
+                  <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
+                    <rect width={150} height={40} rx={6} fill={`${node.color}14`} stroke={node.color} strokeWidth={1.5} />
+                    <circle cx={138} cy={8} r={5} fill={statusColor} />
+                    <text x={10} y={17} fill={theme.palette.text.primary} style={{ fontSize: '11px', fontWeight: 600 }}>{node.label}</text>
+                    <text x={10} y={32} fill={theme.palette.text.secondary} style={{ fontSize: '9px' }}>{node.stage}</text>
+                  </g>
+                );
+              })}
+            </svg>
+          </Box>
+        </CardContent>
+      </Card>
+
       {failedRuns.length > 0 && (
         <Alert severity="error" sx={{ mb: 3 }}>
           <strong>{failedRuns.length} pipeline(s) falharam:</strong>{' '}

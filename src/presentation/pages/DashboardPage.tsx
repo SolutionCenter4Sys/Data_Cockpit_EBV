@@ -40,10 +40,28 @@ import { fetchDashboard } from '../../app/slices/dashboardSlice';
 import KpiCard from '../components/KpiCard';
 import HealthRing from '../components/HealthRing';
 import PageSkeleton from '../components/PageSkeleton';
-import type { LayerHealth, DataLayer, GlobalHealthKpi, SlaMetric, RoiMetric } from '../../domain/entities';
+import type { LayerHealth, DataLayer, GlobalHealthKpi, SlaMetric, RoiMetric, StageHealth, PipelineStage } from '../../domain/entities';
 
 type DashboardPeriod = '1H' | '4H' | '24H' | '7D' | '30D';
 type LayerFilter = 'ALL' | DataLayer;
+
+const STAGE_COLORS: Record<PipelineStage, string> = {
+  INGESTAO: '#1565C0',
+  GOVERNANCA: '#6A1B9A',
+  DW: '#00695C',
+  ANALYTICS_STAGE: '#E65100',
+  DELIVERY: '#283593',
+  PRODUTOS: '#AD1457',
+};
+
+const MOCK_STAGE_HEALTH: StageHealth[] = [
+  { stage: 'INGESTAO', label: 'Ingestão', owner: 'Caio', healthScore: 94.2, activeAlerts: 2, qualityChecks: 18, qualityPassing: 16, lastUpdated: '2026-03-29T10:15:00Z' },
+  { stage: 'GOVERNANCA', label: 'Governança', owner: 'Diego', healthScore: 97.8, activeAlerts: 0, qualityChecks: 24, qualityPassing: 23, lastUpdated: '2026-03-29T10:12:00Z' },
+  { stage: 'DW', label: 'Data Warehouse', owner: 'Shimada', healthScore: 91.5, activeAlerts: 3, qualityChecks: 32, qualityPassing: 28, lastUpdated: '2026-03-29T10:10:00Z' },
+  { stage: 'ANALYTICS_STAGE', label: 'Analytics', owner: 'Shimada', healthScore: 88.3, activeAlerts: 4, qualityChecks: 15, qualityPassing: 12, lastUpdated: '2026-03-29T10:08:00Z' },
+  { stage: 'DELIVERY', label: 'Delivery', owner: 'Caio', healthScore: 99.1, activeAlerts: 0, qualityChecks: 8, qualityPassing: 8, lastUpdated: '2026-03-29T10:14:00Z' },
+  { stage: 'PRODUTOS', label: 'Produtos', owner: 'Diego', healthScore: 96.5, activeAlerts: 1, qualityChecks: 12, qualityPassing: 11, lastUpdated: '2026-03-29T10:13:00Z' },
+];
 
 const MOCK_SLA: SlaMetric[] = [
   { layer: 'INGESTION', target: 99.5, actual: 99.2, trend: 'STABLE' },
@@ -370,6 +388,58 @@ export default function DashboardPage() {
           <strong>{data.criticalAlerts} alerta(s) crítico(s)</strong> requerem atenção imediata — processos de dados podem estar em risco.
         </Alert>
       )}
+
+      <Card sx={{ mb: 2.5 }}>
+        <CardContent sx={{ p: 2.5 }}>
+          <Typography variant="h6" sx={{ mb: 0.5 }}>Saúde por Área da Esteira</Typography>
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 2 }}>
+            Ingestão → Governança → DW → Analytics → Delivery → Produtos
+          </Typography>
+          <Grid container spacing={2}>
+            {MOCK_STAGE_HEALTH.map((stage) => {
+              const color = STAGE_COLORS[stage.stage];
+              const passRate = stage.qualityChecks > 0 ? Math.round((stage.qualityPassing / stage.qualityChecks) * 100) : 0;
+              return (
+                <Grid item xs={12} sm={6} md={4} lg={2} key={stage.stage}>
+                  <Card variant="outlined" sx={{
+                    border: `1px solid ${color}22`,
+                    background: `linear-gradient(135deg, ${color}08, transparent)`,
+                    height: '100%',
+                  }}>
+                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color, boxShadow: `0 0 6px ${color}88` }} />
+                        <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.78rem' }}>{stage.label}</Typography>
+                      </Box>
+                      <Typography variant="h4" fontWeight={800} sx={{ color, lineHeight: 1 }}>
+                        {stage.healthScore}%
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={stage.healthScore}
+                        sx={{ my: 1, '& .MuiLinearProgress-bar': { bgcolor: color } }}
+                      />
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="caption" color="text.secondary">
+                          <span style={{ fontWeight: 600, color: stage.activeAlerts > 0 ? theme.palette.warning.main : theme.palette.success.main }}>
+                            {stage.activeAlerts}
+                          </span> alertas
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          <span style={{ fontWeight: 600 }}>{passRate}%</span> quality
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: theme.palette.text.disabled, fontSize: '0.62rem' }}>
+                        Responsável: {stage.owner}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
+        </CardContent>
+      </Card>
 
       <Card sx={{ mb: 2.5 }}>
         <CardContent sx={{ p: 2.5 }}>

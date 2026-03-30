@@ -25,6 +25,7 @@ import dataQualityReducer from "./slices/dataQualitySlice";
 import queryBuilderReducer from "./slices/queryBuilderSlice";
 import ruleEngineReducer from "./slices/ruleEngineSlice";
 import connectorsReducer from "./slices/connectorsSlice";
+import discoveryReducer from "./slices/discoverySlice";
 
 export const store = configureStore({
   reducer: {
@@ -53,6 +54,7 @@ export const store = configureStore({
     queryBuilder: queryBuilderReducer,
     ruleEngine: ruleEngineReducer,
     connectors: connectorsReducer,
+    discovery: discoveryReducer,
   },
 });
 

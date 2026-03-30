@@ -1,8 +1,10 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export type AnomalyLayer = "ingestion" | "trusted" | "analytics" | "batch";
-export type ActionType = "notify" | "block" | "retry" | "escalate" | "auto_fix";
+export type ActionType = "notify" | "block" | "retry" | "escalate" | "auto_fix" | "servicenow";
 export type TriggerStatus = "active" | "triggered" | "inactive";
+
+export type OutputTarget = "slack" | "teams" | "email" | "pagerduty" | "servicenow" | "jira" | "dashboard";
 
 export interface ActionRule {
   id: string; anomalyType: string; layer: AnomalyLayer;
@@ -10,6 +12,8 @@ export interface ActionRule {
   action: ActionType; actionDescription: string; notifyChannel: string;
   triggerCount: number; lastTriggeredAt: string | null;
   status: TriggerStatus; autoBlocking: boolean;
+  outputTargets: OutputTarget[];
+  sourceType: "quality" | "alert" | "manual";
 }
 
 export interface ActionMatrixState {
@@ -19,13 +23,13 @@ export interface ActionMatrixState {
 let ruleCounter = 20;
 
 const mockRules: ActionRule[] = [
-  { id:"am-01", anomalyType:"Score Zerado", layer:"analytics", severity:"critical", action:"block", actionDescription:"Bloquear envio de score e acionar squad de dados", notifyChannel:"Slack #critical + Email Squad", triggerCount:7, lastTriggeredAt:"2026-03-19T14:22:00Z", status:"active", autoBlocking:true },
-  { id:"am-02", anomalyType:"Arquivo FFT Invalido", layer:"trusted", severity:"critical", action:"block", actionDescription:"Pausar pipeline Trusted->Analytics e notificar lead", notifyChannel:"Teams #data-ops + PagerDuty", triggerCount:2, lastTriggeredAt:"2026-03-19T16:30:00Z", status:"triggered", autoBlocking:true },
-  { id:"am-03", anomalyType:"Taxa de Erro Ingestion > 5%", layer:"ingestion", severity:"high", action:"escalate", actionDescription:"Escalar apos 2 retentativas automaticas", notifyChannel:"Slack #data-alerts", triggerCount:12, lastTriggeredAt:"2026-03-19T17:10:00Z", status:"active", autoBlocking:false },
-  { id:"am-04", anomalyType:"Batch com Atraso > 30min", layer:"batch", severity:"high", action:"notify", actionDescription:"Notificar responsavel e monitorar continuidade", notifyChannel:"Email Automatico + Badge", triggerCount:4, lastTriggeredAt:"2026-03-18T23:45:00Z", status:"active", autoBlocking:false },
-  { id:"am-05", anomalyType:"Oscilacao de Score > 15%", layer:"analytics", severity:"high", action:"notify", actionDescription:"Gerar alerta e iniciar analise manual", notifyChannel:"Slack #score-monitor", triggerCount:3, lastTriggeredAt:"2026-03-19T10:00:00Z", status:"active", autoBlocking:false },
-  { id:"am-06", anomalyType:"Campo Obrigatorio Nulo > 10%", layer:"trusted", severity:"medium", action:"retry", actionDescription:"Reprocessar source afetado (max 3 tentativas)", notifyChannel:"Log + Dashboard", triggerCount:8, lastTriggeredAt:"2026-03-19T15:30:00Z", status:"active", autoBlocking:false },
-  { id:"am-07", anomalyType:"Falha Validacao Identidade", layer:"ingestion", severity:"critical", action:"block", actionDescription:"Quarentena e revisao manual obrigatoria", notifyChannel:"PagerDuty + Slack #critical", triggerCount:1, lastTriggeredAt:"2026-03-19T16:00:00Z", status:"triggered", autoBlocking:true },
+  { id:"am-01", anomalyType:"Score Zerado", layer:"analytics", severity:"critical", action:"block", actionDescription:"Bloquear envio de score e acionar squad de dados", notifyChannel:"Slack #critical + Email Squad", triggerCount:7, lastTriggeredAt:"2026-03-19T14:22:00Z", status:"active", autoBlocking:true, outputTargets:["slack","servicenow","email"], sourceType:"quality" },
+  { id:"am-02", anomalyType:"Arquivo FFT Invalido", layer:"trusted", severity:"critical", action:"servicenow", actionDescription:"Abrir incidente no ServiceNow e pausar pipeline", notifyChannel:"Teams #data-ops + ServiceNow", triggerCount:2, lastTriggeredAt:"2026-03-19T16:30:00Z", status:"triggered", autoBlocking:true, outputTargets:["servicenow","teams","pagerduty"], sourceType:"alert" },
+  { id:"am-03", anomalyType:"Taxa de Erro Ingestion > 5%", layer:"ingestion", severity:"high", action:"escalate", actionDescription:"Escalar apos 2 retentativas automaticas", notifyChannel:"Slack #data-alerts", triggerCount:12, lastTriggeredAt:"2026-03-19T17:10:00Z", status:"active", autoBlocking:false, outputTargets:["slack","servicenow"], sourceType:"alert" },
+  { id:"am-04", anomalyType:"Batch com Atraso > 30min", layer:"batch", severity:"high", action:"notify", actionDescription:"Notificar responsavel e monitorar continuidade", notifyChannel:"Email Automatico + Badge", triggerCount:4, lastTriggeredAt:"2026-03-18T23:45:00Z", status:"active", autoBlocking:false, outputTargets:["email","dashboard"], sourceType:"alert" },
+  { id:"am-05", anomalyType:"Oscilacao de Score > 15%", layer:"analytics", severity:"high", action:"notify", actionDescription:"Gerar alerta e iniciar analise manual", notifyChannel:"Slack #score-monitor", triggerCount:3, lastTriggeredAt:"2026-03-19T10:00:00Z", status:"active", autoBlocking:false, outputTargets:["slack","dashboard"], sourceType:"quality" },
+  { id:"am-06", anomalyType:"Campo Obrigatorio Nulo > 10%", layer:"trusted", severity:"medium", action:"retry", actionDescription:"Reprocessar source afetado (max 3 tentativas)", notifyChannel:"Log + Dashboard", triggerCount:8, lastTriggeredAt:"2026-03-19T15:30:00Z", status:"active", autoBlocking:false, outputTargets:["dashboard"], sourceType:"quality" },
+  { id:"am-07", anomalyType:"Falha Validacao Identidade", layer:"ingestion", severity:"critical", action:"servicenow", actionDescription:"Abrir incidente ServiceNow + quarentena obrigatória", notifyChannel:"ServiceNow + PagerDuty", triggerCount:1, lastTriggeredAt:"2026-03-19T16:00:00Z", status:"triggered", autoBlocking:true, outputTargets:["servicenow","pagerduty","slack"], sourceType:"quality" },
 ];
 
 export const fetchActionRules = createAsyncThunk("actionMatrix/fetchRules", async () => {
@@ -39,7 +43,7 @@ const actionMatrixSlice = createSlice({
   reducers: {
     createActionRule(state, { payload }: PayloadAction<Omit<ActionRule, "id" | "triggerCount" | "lastTriggeredAt">>) {
       ruleCounter++;
-      state.rules.push({ ...payload, id: `am-${ruleCounter}`, triggerCount: 0, lastTriggeredAt: null });
+      state.rules.push({ ...payload, id: `am-${ruleCounter}`, triggerCount: 0, lastTriggeredAt: null, outputTargets: payload.outputTargets || ["dashboard"], sourceType: payload.sourceType || "manual" });
     },
     updateActionRule(state, { payload }: PayloadAction<ActionRule>) {
       const idx = state.rules.findIndex((r) => r.id === payload.id);

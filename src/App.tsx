@@ -26,25 +26,27 @@ import PreditivoPage from "./presentation/pages/PreditivoPage";
 import ConselheiroPage from "./presentation/pages/ConselheiroPage";
 import ComunicadorPage from "./presentation/pages/ComunicadorPage";
 import ParkingLotPage from "./presentation/pages/ParkingLotPage";
+import DiscoveryPage from "./presentation/pages/DiscoveryPage";
+import ObservabilityPage from "./presentation/pages/ObservabilityPage";
 
 export default function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        {/* Plataforma de Monitoramento */}
+        {/* Jornada do Dado (Alex Granado) */}
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/data-catalog" element={<DataCatalogPage />} />
-        <Route path="/event-hub" element={<EventHubPage />} />
+        <Route path="/discovery" element={<DiscoveryPage />} />
         <Route path="/lineage" element={<LineagePage />} />
+        <Route path="/observability" element={<ObservabilityPage />} />
         <Route path="/data-quality" element={<DataQualityPage />} />
+        <Route path="/alerts" element={<AlertsPage />} />
+        <Route path="/action-matrix" element={<ActionMatrixPage />} />
         {/* Motor & Regras */}
         <Route path="/query-builder" element={<QueryBuilderPage />} />
         <Route path="/rule-engine" element={<RuleEnginePage />} />
-        <Route path="/action-matrix" element={<ActionMatrixPage />} />
         <Route path="/connectors" element={<ConnectorsPage />} />
         {/* Monitoramento */}
-        <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/score" element={<ScoreMonitorPage />} />
         <Route path="/batch" element={<BatchMonitorPage />} />
         <Route path="/ingestion" element={<IngestionPage />} />
@@ -63,6 +65,9 @@ export default function App() {
         <Route path="/conselheiro" element={<ConselheiroPage />} />
         <Route path="/comunicador" element={<ComunicadorPage />} />
         <Route path="/parking-lot" element={<ParkingLotPage />} />
+        {/* Hidden: legacy */}
+        <Route path="/data-catalog" element={<DataCatalogPage />} />
+        <Route path="/event-hub" element={<EventHubPage />} />
       </Route>
     </Routes>
   );

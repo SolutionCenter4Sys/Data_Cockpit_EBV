@@ -36,12 +36,20 @@ const STATUS_CONFIG: Record<TestResult, { label: string; bg: string; color: stri
   PENDING: { label: "Pending", bg: "#E3F2FD", color: "#1565C0", icon: <HourglassEmptyIcon sx={{ fontSize: 14 }} /> },
 };
 
-const INCIDENT_CONFIG: Record<IncidentStatus, { label: string; color: "success" | "error" | "warning" | "default" }> = {
-  RESOLVED: { label: "Resolvido", color: "success" },
-  OPEN: { label: "Aberto", color: "error" },
-  ACKNOWLEDGED: { label: "Reconhecido", color: "warning" },
+const INCIDENT_CONFIG: Record<IncidentStatus, { label: string; color: "success" | "error" | "warning" | "default" | "secondary" }> = {
+  RESOLVED: { label: "ServiceNow: Resolvido", color: "success" },
+  OPEN: { label: "ServiceNow: Aberto", color: "error" },
+  ACKNOWLEDGED: { label: "ServiceNow: Em progresso", color: "warning" },
   NONE: { label: "---", color: "default" },
 };
+
+const MOCK_CONNECTORS = [
+  { id: "conn-01", name: "EBV Core Database (PostgreSQL)" },
+  { id: "conn-02", name: "BigQuery Analytics" },
+  { id: "conn-03", name: "Oracle Legado" },
+  { id: "conn-04", name: "Kafka Events Stream" },
+  { id: "conn-05", name: "GCS Data Lake" },
+];
 
 const PIE_COLORS: Record<string, string> = {
   Success: "#4CAF50",
@@ -386,7 +394,7 @@ export default function DataQualityPage() {
                       <TableCell><Typography variant="caption" fontWeight={700}>Nome</Typography></TableCell>
                       <TableCell><Typography variant="caption" fontWeight={700}>Tabela</Typography></TableCell>
                       <TableCell><Typography variant="caption" fontWeight={700}>Coluna</Typography></TableCell>
-                      <TableCell><Typography variant="caption" fontWeight={700}>Incidente</Typography></TableCell>
+                      <TableCell><Typography variant="caption" fontWeight={700}>ServiceNow</Typography></TableCell>
                       <TableCell align="center" sx={{ width: 48 }} />
                     </TableRow>
                   </TableHead>
@@ -442,7 +450,7 @@ export default function DataQualityPage() {
                           </TableCell>
                           <TableCell>
                             {test.incidentStatus !== "NONE" ? (
-                              <Chip label={inc.label} size="small" color={inc.color} variant="outlined" sx={{ fontWeight: 600, fontSize: "0.65rem" }} />
+                              <Chip label={inc.label} size="small" color={inc.color as "success" | "error" | "warning" | "default"} variant="outlined" sx={{ fontWeight: 600, fontSize: "0.6rem" }} />
                             ) : (
                               <Typography variant="caption" color="text.disabled">---</Typography>
                             )}
@@ -592,14 +600,21 @@ export default function DataQualityPage() {
                 <TextField label="Coluna" fullWidth size="small" value={form.columnName} onChange={(e) => setForm({ ...form, columnName: e.target.value })} placeholder="ex: customer_id" />
               </Grid>
             </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField label="Fonte (ID)" fullWidth size="small" value={form.sourceId} onChange={(e) => setForm({ ...form, sourceId: e.target.value })} />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField label="Nome da Fonte" fullWidth size="small" value={form.sourceName} onChange={(e) => setForm({ ...form, sourceName: e.target.value })} />
-              </Grid>
-            </Grid>
+            <FormControl fullWidth size="small">
+              <InputLabel>Conector</InputLabel>
+              <Select
+                value={form.sourceId}
+                label="Conector"
+                onChange={(e: SelectChangeEvent) => {
+                  const conn = MOCK_CONNECTORS.find((c) => c.id === e.target.value);
+                  setForm({ ...form, sourceId: e.target.value, sourceName: conn?.name || "" });
+                }}
+              >
+                {MOCK_CONNECTORS.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
               label="Query SQL" fullWidth multiline rows={4}
               value={form.query}

@@ -5,7 +5,7 @@ import {
   TableContainer, TableHead, TableRow, Paper, useTheme, Button,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   FormControl, InputLabel, Select, MenuItem, IconButton, Switch,
-  Stack, FormControlLabel,
+  Stack, FormControlLabel, Card, CardContent,
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material/Select";
 import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
@@ -14,12 +14,14 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import ReplayIcon from "@mui/icons-material/Replay";
 import EscalatorWarningIcon from "@mui/icons-material/EscalatorWarning";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useAppDispatch, useAppSelector } from "../../app/store";
 import { fetchActionRules, createActionRule, updateActionRule, deleteActionRule, toggleActionRule } from "../../app/slices/actionMatrixSlice";
-import type { ActionType, TriggerStatus, ActionRule, AnomalyLayer } from "../../app/slices/actionMatrixSlice";
+import type { ActionType, TriggerStatus, ActionRule, AnomalyLayer, OutputTarget } from "../../app/slices/actionMatrixSlice";
 import KpiCard from "../components/KpiCard";
 import PageSkeleton from "../components/PageSkeleton";
 
@@ -29,15 +31,24 @@ const ACTION_ICONS: Record<ActionType, ReactElement> = {
   retry: <ReplayIcon fontSize="small" />,
   escalate: <EscalatorWarningIcon fontSize="small" />,
   auto_fix: <AutoFixHighIcon fontSize="small" />,
+  servicenow: <SupportAgentIcon fontSize="small" />,
 };
 
-const ACTION_COLOR: Record<ActionType, "error" | "info" | "warning" | "primary" | "success"> = {
-  block: "error", notify: "info", retry: "warning", escalate: "primary", auto_fix: "success",
+const ACTION_COLOR: Record<ActionType, "error" | "info" | "warning" | "primary" | "success" | "secondary"> = {
+  block: "error", notify: "info", retry: "warning", escalate: "primary", auto_fix: "success", servicenow: "secondary",
 };
+
+const OUTPUT_LABELS: Record<OutputTarget, string> = {
+  slack: "Slack", teams: "Teams", email: "Email", pagerduty: "PagerDuty",
+  servicenow: "ServiceNow", jira: "Jira", dashboard: "Dashboard",
+};
+
+const ALL_OUTPUT_TARGETS: OutputTarget[] = ["slack", "teams", "email", "pagerduty", "servicenow", "jira", "dashboard"];
 
 const EMPTY_FORM: Omit<ActionRule, "id" | "triggerCount" | "lastTriggeredAt"> = {
   anomalyType: "", layer: "analytics", severity: "high", action: "notify",
   actionDescription: "", notifyChannel: "", status: "active", autoBlocking: false,
+  outputTargets: ["dashboard"], sourceType: "manual",
 };
 
 function StatusBadge({ status }: { status: TriggerStatus }) {
@@ -62,6 +73,7 @@ export default function ActionMatrixPage() {
     setForm({
       anomalyType: rule.anomalyType, layer: rule.layer, severity: rule.severity, action: rule.action,
       actionDescription: rule.actionDescription, notifyChannel: rule.notifyChannel, status: rule.status, autoBlocking: rule.autoBlocking,
+      outputTargets: rule.outputTargets || ["dashboard"], sourceType: rule.sourceType || "manual",
     });
     setDialogOpen(true);
   };
@@ -83,11 +95,28 @@ export default function ActionMatrixPage() {
 
   return (
     <Box>
+      <Card sx={{ mb: 3, border: `1px solid ${theme.palette.divider}` }}>
+        <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+          <Typography variant="overline" color="text.secondary" sx={{ fontSize: "0.65rem" }}>Fluxo End-to-End</Typography>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
+            <Chip label="Qualidade de Dados" color="warning" size="small" variant="outlined" />
+            <ArrowForwardIcon fontSize="small" sx={{ color: theme.palette.text.disabled }} />
+            <Chip label="Falha Detectada" color="error" size="small" />
+            <ArrowForwardIcon fontSize="small" sx={{ color: theme.palette.text.disabled }} />
+            <Chip label="Alerta Gerado" color="info" size="small" variant="outlined" />
+            <ArrowForwardIcon fontSize="small" sx={{ color: theme.palette.text.disabled }} />
+            <Chip label="Matriz de Acionamento" color="primary" size="small" />
+            <ArrowForwardIcon fontSize="small" sx={{ color: theme.palette.text.disabled }} />
+            <Chip icon={<SupportAgentIcon />} label="ServiceNow / Slack / Teams / Email" color="secondary" size="small" variant="outlined" />
+          </Stack>
+        </CardContent>
+      </Card>
+
       <Box sx={{ display:"flex", alignItems:"center", gap:1.5, mb:3 }}>
         <PlaylistAddCheckIcon sx={{ color:theme.palette.primary.main, fontSize:28 }} />
         <Box sx={{ flex: 1 }}>
           <Typography variant="h5" fontWeight={700}>Matriz de Acionamento</Typography>
-          <Typography variant="body2" color="text.secondary">Regras de ação automática por tipo de anomalia e camada</Typography>
+          <Typography variant="body2" color="text.secondary">Quality → Alerta → Ação automática → Saída (ServiceNow, Slack, Teams, Email)</Typography>
         </Box>
         <Button variant="contained" size="small" startIcon={<AddCircleOutlineIcon />} onClick={openCreate}>Nova Regra</Button>
       </Box>
@@ -120,7 +149,8 @@ export default function ActionMatrixPage() {
                 <TableCell><Typography variant="caption" fontWeight={600}>Camada</Typography></TableCell>
                 <TableCell><Typography variant="caption" fontWeight={600}>Severidade</Typography></TableCell>
                 <TableCell><Typography variant="caption" fontWeight={600}>Ação</Typography></TableCell>
-                <TableCell><Typography variant="caption" fontWeight={600}>Canal</Typography></TableCell>
+                <TableCell><Typography variant="caption" fontWeight={600}>Saídas</Typography></TableCell>
+                <TableCell><Typography variant="caption" fontWeight={600}>Origem</Typography></TableCell>
                 <TableCell><Typography variant="caption" fontWeight={600}>Status</Typography></TableCell>
                 <TableCell align="right"><Typography variant="caption" fontWeight={600}>Disparos</Typography></TableCell>
                 <TableCell align="center"><Typography variant="caption" fontWeight={600}>Gerenciar</Typography></TableCell>
@@ -152,7 +182,19 @@ export default function ActionMatrixPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Typography variant="caption" color="text.secondary">{rule.notifyChannel}</Typography>
+                    <Stack direction="row" spacing={0.3} flexWrap="wrap" useFlexGap>
+                      {(rule.outputTargets || []).map((t) => (
+                        <Chip key={t} label={OUTPUT_LABELS[t] || t} size="small" variant="outlined"
+                          color={t === "servicenow" ? "secondary" : "default"}
+                          sx={{ fontSize: "0.58rem", height: 18, fontWeight: t === "servicenow" ? 700 : 400 }} />
+                      ))}
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={rule.sourceType === "quality" ? "Quality" : rule.sourceType === "alert" ? "Alerta" : "Manual"}
+                      size="small" variant="outlined"
+                      color={rule.sourceType === "quality" ? "warning" : rule.sourceType === "alert" ? "error" : "default"}
+                      sx={{ fontSize: "0.58rem", height: 18 }} />
                   </TableCell>
                   <TableCell><StatusBadge status={rule.status} /></TableCell>
                   <TableCell align="right">
@@ -220,9 +262,35 @@ export default function ActionMatrixPage() {
                 <MenuItem value="retry">Retry</MenuItem>
                 <MenuItem value="escalate">Escalar</MenuItem>
                 <MenuItem value="auto_fix">Auto-fix</MenuItem>
+                <MenuItem value="servicenow">ServiceNow (Incidente)</MenuItem>
               </Select>
             </FormControl>
-            <TextField label="Canal de Notificação" fullWidth size="small" value={form.notifyChannel} onChange={(e) => setForm({ ...form, notifyChannel: e.target.value })} placeholder="Slack #critical, PagerDuty, Email" />
+            <FormControl fullWidth size="small">
+              <InputLabel>Origem da Regra</InputLabel>
+              <Select value={form.sourceType || "manual"} label="Origem da Regra" onChange={(e: SelectChangeEvent) => setForm({ ...form, sourceType: e.target.value as ActionRule["sourceType"] })}>
+                <MenuItem value="quality">Quality (teste de dados)</MenuItem>
+                <MenuItem value="alert">Alerta (monitoramento)</MenuItem>
+                <MenuItem value="manual">Manual</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth size="small">
+              <InputLabel>Canais de Saída</InputLabel>
+              <Select
+                multiple
+                value={form.outputTargets || []}
+                label="Canais de Saída"
+                onChange={(e: SelectChangeEvent<string[]>) => {
+                  const val = e.target.value;
+                  setForm({ ...form, outputTargets: (typeof val === "string" ? val.split(",") : val) as OutputTarget[] });
+                }}
+                renderValue={(selected) => (selected as OutputTarget[]).map((s) => OUTPUT_LABELS[s]).join(", ")}
+              >
+                {ALL_OUTPUT_TARGETS.map((t) => (
+                  <MenuItem key={t} value={t}>{OUTPUT_LABELS[t]}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField label="Canal de Notificação (legado)" fullWidth size="small" value={form.notifyChannel} onChange={(e) => setForm({ ...form, notifyChannel: e.target.value })} placeholder="Slack #critical, PagerDuty, Email" />
             <FormControlLabel control={<Switch checked={form.autoBlocking} onChange={(e) => setForm({ ...form, autoBlocking: e.target.checked })} />} label="Auto-blocking (bloqueia pipeline automaticamente)" />
           </Stack>
         </DialogContent>

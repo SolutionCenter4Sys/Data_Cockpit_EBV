@@ -8,16 +8,16 @@ import { fetchDashboard } from '../../app/slices/dashboardSlice';
 import { fetchAlerts } from '../../app/slices/alertSlice';
 
 const PAGE_META: Record<string, { title: string; subtitle: string }> = {
-  '/dashboard': { title: 'Dashboard Executivo', subtitle: 'Visão consolidada de saúde, SLA e ROI dos dados' },
-  '/data-catalog': { title: 'Catálogo de Dados', subtitle: 'Descoberta e exploração de fontes e assets de dados' },
-  '/event-hub': { title: 'Hub de Eventos', subtitle: 'Monitoramento de eventos em tempo real com validação de schema' },
-  '/lineage': { title: 'Linhagem de Dados', subtitle: 'Lineage de pipelines, gargalos e rastreabilidade' },
-  '/data-quality': { title: 'Qualidade de Dados', subtitle: 'Construa confiança em seus dados com testes de qualidade e crie produtos de dados confiáveis' },
+  '/dashboard': { title: 'Dashboard Executivo', subtitle: 'Visão consolidada de saúde por área da esteira: Ingestão, Governança, DW, Analytics, Delivery, Produtos' },
+  '/discovery': { title: 'Discovery', subtitle: 'Busca global de artefatos: tabelas, colunas, regras, alertas, conectores e pipelines' },
+  '/lineage': { title: 'Linhagem de Dados', subtitle: 'Mapa visual end-to-end do dado: Fontes → Ingestão → Governança → DW → Analytics → Delivery → Produtos' },
+  '/observability': { title: 'Observabilidade', subtitle: 'Monitoramento de pipelines, taxa de sucesso e saúde operacional por camada' },
+  '/data-quality': { title: 'Qualidade de Dados', subtitle: 'Testes de qualidade com conectores, incidentes enviados para ServiceNow' },
+  '/alerts': { title: 'Central de Alertas', subtitle: 'Gestão de alertas e regras de acionamento' },
+  '/action-matrix': { title: 'Matriz de Acionamento', subtitle: 'Quality → Alerta → Ação automática → ServiceNow / Slack / Teams / Email' },
   '/query-builder': { title: 'Query Builder', subtitle: 'Construtor visual de consultas com preview SQL' },
   '/rule-engine': { title: 'Cadastro de Regras', subtitle: 'Motor de regras de negócio com CEP e automação' },
-  '/action-matrix': { title: 'Matriz de Acionamento', subtitle: 'Regras de ação automática por tipo de anomalia' },
   '/connectors': { title: 'Conectores & Credenciais', subtitle: 'Gestão de conexões, pools e credential vault' },
-  '/alerts': { title: 'Central de Alertas', subtitle: 'Gestão de alertas e regras de acionamento' },
   '/score': { title: 'Score Monitor', subtitle: 'Monitoramento de modelos analíticos e anomalias' },
   '/batch': { title: 'Batch Monitor', subtitle: 'Rastreamento de jobs e processos em lote' },
   '/ingestion': { title: 'Camada Ingestão', subtitle: 'Monitoramento de fontes de ingestão de dados' },
@@ -34,6 +34,8 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   '/conselheiro': { title: 'AG-08 Conselheiro', subtitle: 'Recomendações de janelas batch e capacidade' },
   '/comunicador': { title: 'AG-04 Comunicador', subtitle: 'Notificações multi-canal e roteamento inteligente' },
   '/parking-lot': { title: 'Parking Lot', subtitle: 'Agentes e épicos planejados para futuro' },
+  '/data-catalog': { title: 'Catálogo de Dados', subtitle: 'Descoberta e exploração de fontes e assets de dados (substituído por Discovery)' },
+  '/event-hub': { title: 'Hub de Eventos', subtitle: 'Monitoramento de eventos em tempo real com validação de schema' },
 };
 
 export default function AppLayout() {
