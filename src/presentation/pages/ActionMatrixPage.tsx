@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { ReactElement } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box, Grid, Typography, Chip, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, useTheme, Button,
@@ -60,12 +61,39 @@ function StatusBadge({ status }: { status: TriggerStatus }) {
 export default function ActionMatrixPage() {
   const dispatch = useAppDispatch();
   const theme = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { rules, loading } = useAppSelector((s) => s.actionMatrix);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<ActionRule | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const processedNavState = useRef(false);
 
   useEffect(() => { dispatch(fetchActionRules()); }, [dispatch]);
+
+  useEffect(() => {
+    const state = location.state as {
+      fromQuality?: boolean; testName?: string; tableName?: string;
+      columnName?: string; failureReason?: string; lastResult?: string;
+    } | null;
+    if (state?.fromQuality && !processedNavState.current) {
+      processedNavState.current = true;
+      const severity = state.lastResult === "FAIL" ? "high" : "medium";
+      setEditingRule(null);
+      setForm({
+        ...EMPTY_FORM,
+        anomalyType: state.failureReason && state.failureReason !== "--"
+          ? state.failureReason
+          : `Falha no teste: ${state.testName}`,
+        actionDescription: `Teste "${state.testName}" em ${state.tableName}${state.columnName && state.columnName !== "--" ? ` (coluna: ${state.columnName})` : ""}`,
+        severity: severity as ActionRule["severity"],
+        sourceType: "quality",
+        action: "notify",
+      });
+      setDialogOpen(true);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   const openCreate = () => { setEditingRule(null); setForm(EMPTY_FORM); setDialogOpen(true); };
   const openEdit = (rule: ActionRule) => {

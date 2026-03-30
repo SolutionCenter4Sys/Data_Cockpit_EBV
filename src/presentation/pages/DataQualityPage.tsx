@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box, Grid, Card, CardContent, Typography, Chip, Button, useTheme, Stack,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -16,6 +17,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import TuneIcon from "@mui/icons-material/Tune";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import AddAlertIcon from "@mui/icons-material/AddAlert";
 import {
   ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis,
   PolarRadiusAxis, Tooltip as RechartsTooltip,
@@ -66,6 +68,7 @@ const EMPTY_FORM = {
 
 export default function DataQualityPage() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const theme = useTheme();
   const { tests, indicators, testSuites, loading, searchTerm, filters, suiteSearchTerm, suiteOwnerFilter } = useAppSelector((s) => s.dataQuality);
   const [tabIndex, setTabIndex] = useState(0);
@@ -389,6 +392,7 @@ export default function DataQualityPage() {
                 <Table size="small">
                   <TableHead>
                     <TableRow>
+                      <TableCell align="center" sx={{ width: 48 }} />
                       <TableCell><Typography variant="caption" fontWeight={700}>Status</Typography></TableCell>
                       <TableCell><Typography variant="caption" fontWeight={700}>Motivo da falha/cancelamento</Typography></TableCell>
                       <TableCell><Typography variant="caption" fontWeight={700}>Última Execução</Typography></TableCell>
@@ -405,6 +409,29 @@ export default function DataQualityPage() {
                       const inc = INCIDENT_CONFIG[test.incidentStatus];
                       return (
                         <TableRow key={test.id} hover>
+                          <TableCell align="center">
+                            {(test.lastResult === "FAIL" || test.lastResult === "ERROR") && (
+                              <Tooltip title="Criar alerta na Matriz de Acionamento">
+                                <IconButton
+                                  size="small"
+                                  color="warning"
+                                  onClick={() => navigate("/action-matrix", {
+                                    state: {
+                                      fromQuality: true,
+                                      testName: test.name,
+                                      testId: test.id,
+                                      tableName: test.tableName,
+                                      columnName: test.columnName,
+                                      failureReason: test.failureReason,
+                                      lastResult: test.lastResult,
+                                    },
+                                  })}
+                                >
+                                  <AddAlertIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Chip
                               icon={cfg.icon}
@@ -466,7 +493,7 @@ export default function DataQualityPage() {
                     })}
                     {filteredTests.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                        <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                           <Typography variant="body2" color="text.secondary">Nenhum caso de teste encontrado</Typography>
                         </TableCell>
                       </TableRow>
