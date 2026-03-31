@@ -28,20 +28,13 @@ import {
   Pie,
   Cell,
   Tooltip as RechartsTooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Legend,
 } from 'recharts';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { fetchDashboard } from '../../app/slices/dashboardSlice';
 import { fetchPipelineRuns } from '../../app/slices/lineageSlice';
 import { fetchTests } from '../../app/slices/dataQualitySlice';
-import KpiCard from '../components/KpiCard';
 import PageSkeleton from '../components/PageSkeleton';
-import type { DataLayer, SlaMetric, RoiMetric, StageHealth, PipelineStage } from '../../domain/entities';
+import type { DataLayer, StageHealth, PipelineStage } from '../../domain/entities';
 
 type DashboardPeriod = '1H' | '4H' | '24H' | '7D' | '30D';
 type LayerFilter = 'ALL' | DataLayer;
@@ -56,26 +49,14 @@ const STAGE_COLORS: Record<PipelineStage, string> = {
 };
 
 const MOCK_STAGE_HEALTH: StageHealth[] = [
-  { stage: 'INGESTAO', label: 'Ingestão', owner: 'Caio', healthScore: 94.2, activeAlerts: 2, qualityChecks: 18, qualityPassing: 16, lastUpdated: '2026-03-29T10:15:00Z' },
-  { stage: 'GOVERNANCA', label: 'Governança', owner: 'Diego', healthScore: 97.8, activeAlerts: 0, qualityChecks: 24, qualityPassing: 23, lastUpdated: '2026-03-29T10:12:00Z' },
-  { stage: 'DW', label: 'Data Warehouse', owner: 'Shimada', healthScore: 91.5, activeAlerts: 3, qualityChecks: 32, qualityPassing: 28, lastUpdated: '2026-03-29T10:10:00Z' },
-  { stage: 'ANALYTICS_STAGE', label: 'Analytics', owner: 'Shimada', healthScore: 88.3, activeAlerts: 4, qualityChecks: 15, qualityPassing: 12, lastUpdated: '2026-03-29T10:08:00Z' },
-  { stage: 'DELIVERY', label: 'Delivery', owner: 'Caio', healthScore: 99.1, activeAlerts: 0, qualityChecks: 8, qualityPassing: 8, lastUpdated: '2026-03-29T10:14:00Z' },
-  { stage: 'PRODUTOS', label: 'Produtos', owner: 'Diego', healthScore: 96.5, activeAlerts: 1, qualityChecks: 12, qualityPassing: 11, lastUpdated: '2026-03-29T10:13:00Z' },
+  { stage: 'INGESTAO', label: 'Ingestão', owner: 'Caio', healthScore: 94.2, activeAlerts: 2, totalDataAnalyzed: 2_400_000, qualityChecks: 18, qualityPassing: 16, lastUpdated: '2026-03-29T10:15:00Z' },
+  { stage: 'GOVERNANCA', label: 'Governança', owner: 'Diego', healthScore: 97.8, activeAlerts: 0, totalDataAnalyzed: 1_850_000, qualityChecks: 24, qualityPassing: 23, lastUpdated: '2026-03-29T10:12:00Z' },
+  { stage: 'DW', label: 'Data Warehouse', owner: 'Shimada', healthScore: 91.5, activeAlerts: 12, totalDataAnalyzed: 4_200_000, qualityChecks: 32, qualityPassing: 16, lastUpdated: '2026-03-29T10:10:00Z' },
+  { stage: 'ANALYTICS_STAGE', label: 'Analytics', owner: 'Shimada', healthScore: 88.3, activeAlerts: 4, totalDataAnalyzed: 980_000, qualityChecks: 15, qualityPassing: 12, lastUpdated: '2026-03-29T10:08:00Z' },
+  { stage: 'DELIVERY', label: 'Delivery', owner: 'Caio', healthScore: 99.1, activeAlerts: 0, totalDataAnalyzed: 620_000, qualityChecks: 8, qualityPassing: 8, lastUpdated: '2026-03-29T10:14:00Z' },
+  { stage: 'PRODUTOS', label: 'Produtos', owner: 'Diego', healthScore: 96.5, activeAlerts: 1, totalDataAnalyzed: 310_000, qualityChecks: 12, qualityPassing: 11, lastUpdated: '2026-03-29T10:13:00Z' },
 ];
 
-const MOCK_SLA: SlaMetric[] = [
-  { layer: 'INGESTION', target: 99.5, actual: 99.2, trend: 'STABLE' },
-  { layer: 'TRUSTED', target: 99.0, actual: 97.8, trend: 'DOWN' },
-  { layer: 'ANALYTICS', target: 99.9, actual: 99.95, trend: 'UP' },
-];
-
-const MOCK_ROI: RoiMetric[] = [
-  { label: 'SLA Uptime', value: 99.3, unit: '%', trend: 'STABLE' },
-  { label: 'MTTR', value: 23, unit: 'min', trend: 'UP' },
-  { label: 'Custo Incidentes', value: 12400, unit: 'R$/mês', trend: 'DOWN' },
-  { label: 'ROI Plataforma', value: 340, unit: '%', trend: 'UP' },
-];
 
 const LAYER_LABELS: Record<string, string> = {
   ALL: 'Todas',
@@ -184,8 +165,9 @@ export default function DashboardPage() {
   const handleExportCsv = (): void => {
     const rows: string[] = ['tipo;nome;valor;unidade;periodo;camada'];
     filteredStages.forEach((stage) => {
+      const passRate = stage.qualityChecks > 0 ? Math.round((stage.qualityPassing / stage.qualityChecks) * 100) : 0;
       rows.push(
-        ['stage', escapeCsv(stage.label), escapeCsv(stage.healthScore), '%', escapeCsv(PERIOD_LABELS[period]), escapeCsv(LAYER_LABELS[layerFilter])].join(';'),
+        ['stage', escapeCsv(stage.label), escapeCsv(passRate), '%', escapeCsv(PERIOD_LABELS[period]), escapeCsv(LAYER_LABELS[layerFilter])].join(';'),
       );
     });
     downloadFile(`dashboard-cockpit-${Date.now()}.csv`, rows.join('\n'), 'text/csv;charset=utf-8;');
@@ -233,6 +215,7 @@ export default function DashboardPage() {
             {filteredStages.map((stage) => {
               const color = STAGE_COLORS[stage.stage];
               const passRate = stage.qualityChecks > 0 ? Math.round((stage.qualityPassing / stage.qualityChecks) * 100) : 0;
+              const analyzedFmt = stage.totalDataAnalyzed.toLocaleString('pt-BR');
               return (
                 <Grid item xs={12} sm={6} md={4} lg={2} key={stage.stage}>
                   <Card variant="outlined" sx={{
@@ -244,26 +227,31 @@ export default function DashboardPage() {
                     '&:hover': { boxShadow: 4, transform: 'translateY(-2px)' },
                   }} onClick={() => navigate(`/alerts?stage=${stage.stage}`)}>
                     <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
                         <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color, boxShadow: `0 0 6px ${color}88` }} />
                         <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: '0.78rem' }}>{stage.label}</Typography>
                       </Box>
+                      <Typography variant="caption" sx={{ display: 'block', color: theme.palette.text.secondary, fontSize: '0.65rem', lineHeight: 1.25, mb: 0.75 }}>
+                        Taxa de sucesso dos testes de qualidade
+                      </Typography>
                       <Typography variant="h4" fontWeight={800} sx={{ color, lineHeight: 1 }}>
-                        {stage.healthScore}%
+                        {passRate}%
                       </Typography>
                       <LinearProgress
                         variant="determinate"
-                        value={stage.healthScore}
+                        value={passRate}
                         sx={{ my: 1, '& .MuiLinearProgress-bar': { bgcolor: color } }}
                       />
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="caption" color="text.secondary">
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 0.5 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35, flex: 1, minWidth: 0 }}>
                           <span style={{ fontWeight: 600, color: stage.activeAlerts > 0 ? theme.palette.warning.main : theme.palette.success.main }}>
                             {stage.activeAlerts}
-                          </span> alertas
+                          </span>
+                          {' / '}
+                          {analyzedFmt}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          <span style={{ fontWeight: 600 }}>{passRate}%</span> quality
+                        <Typography variant="caption" sx={{ color: theme.palette.text.disabled, whiteSpace: 'nowrap', flexShrink: 0, fontSize: '0.65rem' }}>
+                          | {stage.healthScore}%
                         </Typography>
                       </Box>
                       <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: theme.palette.text.disabled, fontSize: '0.62rem' }}>
@@ -485,58 +473,6 @@ export default function DashboardPage() {
         </Grid>
       </Grid>
 
-      <Card sx={{ mt: 2 }}>
-        <CardContent sx={{ p: 2.5 }}>
-          <Typography variant="h6" sx={{ mb: 0.5 }}>SLA & ROI</Typography>
-          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 2 }}>
-            Indicadores de nível de serviço e retorno sobre investimento da plataforma
-          </Typography>
-
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            {MOCK_ROI.map((roi) => (
-              <Grid item xs={6} sm={3} key={roi.label}>
-                <KpiCard
-                  label={roi.label}
-                  value={typeof roi.value === 'number' && roi.value > 999 ? `${(roi.value / 1000).toFixed(1)}k` : roi.value}
-                  unit={roi.unit}
-                  trend={roi.trend}
-                  trendValue={roi.unit}
-                  severity={roi.trend === 'DOWN' && roi.label.includes('Custo') ? 'HEALTHY' : roi.trend === 'UP' ? 'HEALTHY' : 'MEDIUM'}
-                />
-              </Grid>
-            ))}
-          </Grid>
-
-          <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Cumprimento de SLA por Camada</Typography>
-          <Box sx={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={MOCK_SLA.map((s) => ({
-                layer: s.layer === 'INGESTION' ? 'Ingestão' : s.layer === 'TRUSTED' ? 'Trusted' : 'Analytics',
-                Meta: s.target,
-                Real: s.actual,
-              }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                <XAxis dataKey="layer" tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
-                <YAxis domain={[95, 100]} tick={{ fill: theme.palette.text.secondary, fontSize: 11 }} />
-                <RechartsTooltip
-                  contentStyle={{
-                    backgroundColor: theme.palette.background.paper,
-                    border: `1px solid ${theme.palette.divider}`,
-                    borderRadius: 8,
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="Meta" fill={theme.palette.text.disabled} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Real" radius={[4, 4, 0, 0]}>
-                  {MOCK_SLA.map((s, i) => (
-                    <Cell key={i} fill={s.actual >= s.target ? theme.palette.success.main : theme.palette.error.main} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </Box>
-        </CardContent>
-      </Card>
     </Box>
   );
 }

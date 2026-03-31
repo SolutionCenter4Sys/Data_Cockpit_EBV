@@ -11,8 +11,11 @@ export interface StageHealth {
   stage: PipelineStage;
   label: string;
   owner: string;
+  /** Índice agregado de saúde operacional da área (secundário na UI). */
   healthScore: number;
   activeAlerts: number;
+  /** Volume total de registros/dados analisados nos testes de qualidade (denominador contextual). */
+  totalDataAnalyzed: number;
   qualityChecks: number;
   qualityPassing: number;
   lastUpdated: string;
