@@ -41,6 +41,7 @@ import FlagCircleOutlinedIcon from '@mui/icons-material/FlagCircleOutlined';
 import AddAlertIcon from '@mui/icons-material/AddAlert';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { fetchAlerts, acknowledgeAlert, resolveAlert, createAlert } from '../../app/slices/alertSlice';
+import { fetchTests } from '../../app/slices/dataQualitySlice';
 import SeverityChip from '../components/SeverityChip';
 import PageSkeleton from '../components/PageSkeleton';
 import type { Alert, PipelineStage, SeverityLevel, DataLayer } from '../../domain/entities';
@@ -218,11 +219,12 @@ export default function AlertsPage() {
   const [tab, setTab] = useState(0);
   const [notificationLog, setNotificationLog] = useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const qualityTests = useAppSelector((s) => s.dataQuality.tests);
   const [draft, setDraft] = useState({
     title: '',
     description: '',
     severity: 'MEDIUM' as Alert['severity'],
-    layer: 'INGESTION' as Alert['layer'],
+    qualityTestId: '',
     triggerType: 'THRESHOLD' as Alert['triggerType'],
     affectedProcess: '',
     suggestedAction: '',
@@ -233,6 +235,7 @@ export default function AlertsPage() {
 
   useEffect(() => {
     dispatch(fetchAlerts());
+    dispatch(fetchTests());
   }, [dispatch]);
 
   useEffect(() => {
@@ -310,13 +313,23 @@ export default function AlertsPage() {
   };
 
   const resetDraft = () => setDraft({
-    title: '', description: '', severity: 'MEDIUM', layer: 'INGESTION',
+    title: '', description: '', severity: 'MEDIUM', qualityTestId: '',
     triggerType: 'THRESHOLD', affectedProcess: '', suggestedAction: '',
   });
 
+  const TEST_LAYER_MAP: Record<string, DataLayer> = {
+    'EBV Core Database': 'INGESTION',
+    'Oracle Legado': 'INGESTION',
+    'Kafka Events Stream': 'INGESTION',
+    'BigQuery Analytics': 'ANALYTICS',
+  };
+
   const handleCreateAlert = () => {
     if (!draft.title.trim()) return;
-    dispatch(createAlert(draft));
+    const selectedTest = qualityTests.find((t) => t.id === draft.qualityTestId);
+    const layer: DataLayer = selectedTest ? (TEST_LAYER_MAP[selectedTest.sourceName] ?? 'TRUSTED') : 'INGESTION';
+    const { qualityTestId: _, ...rest } = draft;
+    dispatch(createAlert({ ...rest, layer }));
     setDialogOpen(false);
     resetDraft();
   };
@@ -534,10 +547,12 @@ export default function AlertsPage() {
               <MenuItem key={s} value={s}>{s}</MenuItem>
             ))}
           </TextField>
-          <TextField label="Camada" size="small" select value={draft.layer}
-            onChange={(e) => setDraft((d) => ({ ...d, layer: e.target.value as Alert['layer'] }))}>
-            {(['INGESTION', 'TRUSTED', 'ANALYTICS'] as const).map((l) => (
-              <MenuItem key={l} value={l}>{LAYER_LABELS[l]}</MenuItem>
+          <TextField label="Caso de Teste" size="small" select value={draft.qualityTestId}
+            onChange={(e) => setDraft((d) => ({ ...d, qualityTestId: e.target.value }))}>
+            {qualityTests.map((t) => (
+              <MenuItem key={t.id} value={t.id}>
+                {t.name} — {t.tableName}
+              </MenuItem>
             ))}
           </TextField>
           <TextField label="Tipo de disparo" size="small" select value={draft.triggerType}
