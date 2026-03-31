@@ -21,6 +21,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useAppDispatch, useAppSelector } from "../../app/store";
+import { fetchTests } from "../../app/slices/dataQualitySlice";
 import { fetchActionRules, createActionRule, updateActionRule, deleteActionRule, toggleActionRule } from "../../app/slices/actionMatrixSlice";
 import type { ActionType, TriggerStatus, ActionRule, AnomalyLayer, OutputTarget } from "../../app/slices/actionMatrixSlice";
 import KpiCard from "../components/KpiCard";
@@ -64,16 +65,22 @@ export default function ActionMatrixPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { rules, loading } = useAppSelector((s) => s.actionMatrix);
+  const qualityTests = useAppSelector((s) => s.dataQuality.tests);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<ActionRule | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [qualityTestId, setQualityTestId] = useState("");
   const processedNavState = useRef(false);
 
-  useEffect(() => { dispatch(fetchActionRules()); }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchActionRules());
+    dispatch(fetchTests());
+  }, [dispatch]);
 
   useEffect(() => {
     const state = location.state as {
       fromQuality?: boolean; openDialog?: boolean;
+      testId?: string;
       testName?: string; tableName?: string;
       columnName?: string; failureReason?: string; lastResult?: string;
     } | null;
@@ -93,19 +100,27 @@ export default function ActionMatrixPage() {
         sourceType: "quality",
         action: "notify",
       });
+      setQualityTestId(state.testId ?? "");
       setDialogOpen(true);
     } else if (state.openDialog) {
       setEditingRule(null);
       setForm(EMPTY_FORM);
+      setQualityTestId("");
       setDialogOpen(true);
     }
 
     navigate(location.pathname, { replace: true, state: null });
   }, [location.state, navigate, location.pathname]);
 
-  const openCreate = () => { setEditingRule(null); setForm(EMPTY_FORM); setDialogOpen(true); };
+  const openCreate = () => {
+    setEditingRule(null);
+    setForm(EMPTY_FORM);
+    setQualityTestId("");
+    setDialogOpen(true);
+  };
   const openEdit = (rule: ActionRule) => {
     setEditingRule(rule);
+    setQualityTestId("");
     setForm({
       anomalyType: rule.anomalyType, layer: rule.layer, severity: rule.severity, action: rule.action,
       actionDescription: rule.actionDescription, notifyChannel: rule.notifyChannel, status: rule.status, autoBlocking: rule.autoBlocking,
@@ -260,12 +275,37 @@ export default function ActionMatrixPage() {
         </TableContainer>
       </Paper>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); setQualityTestId(""); }} maxWidth="sm" fullWidth>
         <DialogTitle>{editingRule ? "Editar Alerta" : "Novo Alerta"}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField label="Tipo de Anomalia" fullWidth size="small" value={form.anomalyType} onChange={(e) => setForm({ ...form, anomalyType: e.target.value })} placeholder="Ex: Score Zerado, Batch com Atraso > 30min" />
             <TextField label="Descrição da Ação" fullWidth size="small" multiline rows={2} value={form.actionDescription} onChange={(e) => setForm({ ...form, actionDescription: e.target.value })} />
+            <TextField
+              select
+              label="Caso de Teste (opcional)"
+              fullWidth
+              size="small"
+              value={qualityTestId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setQualityTestId(id);
+                const t = qualityTests.find((x) => x.id === id);
+                setForm((f) => ({
+                  ...f,
+                  anomalyType: t && !f.anomalyType.trim() ? `Falha no teste: ${t.name}` : f.anomalyType,
+                }));
+              }}
+            >
+              <MenuItem value="">
+                <em>Nenhum</em>
+              </MenuItem>
+              {qualityTests.map((t) => (
+                <MenuItem key={t.id} value={t.id}>
+                  {t.name} — {t.tableName}
+                </MenuItem>
+              ))}
+            </TextField>
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <FormControl fullWidth size="small">
@@ -331,7 +371,7 @@ export default function ActionMatrixPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancelar</Button>
+          <Button onClick={() => { setDialogOpen(false); setQualityTestId(""); }}>Cancelar</Button>
           <Button variant="contained" onClick={handleSave} disabled={!form.anomalyType}>{editingRule ? "Salvar" : "Criar"}</Button>
         </DialogActions>
       </Dialog>

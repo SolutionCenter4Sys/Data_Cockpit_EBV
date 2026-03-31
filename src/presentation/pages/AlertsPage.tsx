@@ -356,7 +356,7 @@ export default function AlertsPage() {
               onClick={() => navigate('/action-matrix', { state: { openDialog: true } })}
               sx={{ ml: 'auto', fontSize: '0.75rem', textTransform: 'none' }}
             >
-              Adicionar Alerta
+              Novo Alerta
             </Button>
           </Stack>
         </CardContent>
