@@ -133,7 +133,7 @@ export default function ActionMatrixPage() {
             <ArrowForwardIcon fontSize="small" sx={{ color: theme.palette.text.disabled }} />
             <Chip label="Alerta Gerado" color="info" size="small" variant="outlined" />
             <ArrowForwardIcon fontSize="small" sx={{ color: theme.palette.text.disabled }} />
-            <Chip label="Matriz de Acionamento" color="primary" size="small" />
+            <Chip label="Central de Alertas" color="primary" size="small" />
             <ArrowForwardIcon fontSize="small" sx={{ color: theme.palette.text.disabled }} />
             <Chip icon={<SupportAgentIcon />} label="ServiceNow / Slack / Teams / Email" color="secondary" size="small" variant="outlined" />
           </Stack>
@@ -143,7 +143,7 @@ export default function ActionMatrixPage() {
       <Box sx={{ display:"flex", alignItems:"center", gap:1.5, mb:3 }}>
         <PlaylistAddCheckIcon sx={{ color:theme.palette.primary.main, fontSize:28 }} />
         <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" fontWeight={700}>Matriz de Acionamento</Typography>
+          <Typography variant="h5" fontWeight={700}>Central de Alertas</Typography>
           <Typography variant="body2" color="text.secondary">Quality → Alerta → Ação automática → Saída (ServiceNow, Slack, Teams, Email)</Typography>
         </Box>
         <Button variant="contained" size="small" startIcon={<AddCircleOutlineIcon />} onClick={openCreate}>Novo Alerta</Button>

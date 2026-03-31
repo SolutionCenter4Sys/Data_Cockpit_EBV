@@ -255,7 +255,7 @@ const allArtifacts: DiscoveryResult[] = [
   {
     id: "d-17", type: "ALERT", name: "Score Zerado",
     description: "Alerta quando score de modelo retorna zero — indica falha no pipeline analítico",
-    source: "Central de Alertas", relevance: 92,
+    source: "Observabilidade", relevance: 92,
     metadata: { severity: "CRITICAL", layer: "Analytics", triggers: "7" },
     path: "alerts / analytics / score_zerado",
     owners: [{ name: "Shimada", avatarColor: "#E65100" }],
@@ -269,7 +269,7 @@ const allArtifacts: DiscoveryResult[] = [
   {
     id: "d-18", type: "ALERT", name: "Batch com Atraso > 30min",
     description: "Processo batch ultrapassou janela de execução permitida",
-    source: "Central de Alertas", relevance: 65,
+    source: "Observabilidade", relevance: 65,
     metadata: { severity: "HIGH", layer: "Delivery", triggers: "4" },
     path: "alerts / delivery / batch_atraso",
     owners: [{ name: "Caio", avatarColor: "#00695C" }],

@@ -52,7 +52,7 @@ src/
 |------|--------|-------|
 | `/dashboard` | Dashboard Consolidado | EP-01 |
 | `/score` | Score Monitor | EP-02 |
-| `/alerts` | Central de Alertas | EP-03 |
+| `/alerts` | Observabilidade | EP-03 |
 | `/batch` | Batch Monitor | EP-04 |
 | `/lineage` | Rastreabilidade | EP-05 |
 

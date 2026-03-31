@@ -40,8 +40,8 @@ const jornadaDadoItems = [
   { path:"/lineage",        label:"Linhagem de Dados",     icon:<AccountTreeIcon fontSize="small" />,      isNew: true },
   { path:"/observability",  label:"Observabilidade",       icon:<VisibilityIcon fontSize="small" />,       isNew: true },
   { path:"/data-quality",   label:"Qualidade de Dados",    icon:<FactCheckIcon fontSize="small" />,        isNew: true },
-  { path:"/alerts",         label:"Central de Alertas",    icon:<NotificationsActiveIcon fontSize="small" />, badge:true, isNew: true },
-  { path:"/action-matrix",  label:"Matriz de Acionamento", icon:<PlaylistAddCheckIcon fontSize="small" />, isNew: true },
+  { path:"/alerts",         label:"Observabilidade",       icon:<NotificationsActiveIcon fontSize="small" />, badge:true, isNew: true },
+  { path:"/action-matrix",  label:"Central de Alertas",    icon:<PlaylistAddCheckIcon fontSize="small" />, isNew: true },
 ];
 
 const motorItems = [

@@ -411,7 +411,7 @@ export default function DataQualityPage() {
                         <TableRow key={test.id} hover>
                           <TableCell align="center">
                             {(test.lastResult === "FAIL" || test.lastResult === "ERROR") && (
-                              <Tooltip title="Criar alerta na Matriz de Acionamento">
+                              <Tooltip title="Criar alerta na Central de Alertas">
                                 <IconButton
                                   size="small"
                                   color="warning"
