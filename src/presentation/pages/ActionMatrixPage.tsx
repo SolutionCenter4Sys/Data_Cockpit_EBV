@@ -16,7 +16,7 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import EscalatorWarningIcon from "@mui/icons-material/EscalatorWarning";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import AddAlertIcon from "@mui/icons-material/AddAlert";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -169,7 +169,7 @@ export default function ActionMatrixPage() {
           <Typography variant="h5" fontWeight={700}>Central de Alertas</Typography>
           <Typography variant="body2" color="text.secondary">Quality → Alerta → Ação automática → Saída (ServiceNow, Slack, Teams, Email)</Typography>
         </Box>
-        <Button variant="contained" size="small" startIcon={<AddCircleOutlineIcon />} onClick={openCreate}>Novo Alerta</Button>
+        <Button variant="contained" size="small" startIcon={<AddAlertIcon />} onClick={openCreate} sx={{ textTransform: 'none' }}>Novo Alerta</Button>
       </Box>
 
       <Grid container spacing={2} mb={3}>
