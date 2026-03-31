@@ -14,7 +14,7 @@ import type {
 
 export const MOCK_DASHBOARD_SUMMARY: DashboardSummary = {
   overallHealth: 74,
-  activeAlerts: 19,
+  activeAlerts: 23,
   criticalAlerts: 3,
   lastRefreshed: new Date().toISOString(),
   kpis: [
@@ -25,8 +25,8 @@ export const MOCK_DASHBOARD_SUMMARY: DashboardSummary = {
   ],
   layerHealth: [
     { layer: 'INGESTION', healthScore: 94, activeAlerts: 2, successRate: 89, lastUpdated: '2026-03-29T10:15:00Z' },
-    { layer: 'TRUSTED', healthScore: 95, activeAlerts: 12, successRate: 50, lastUpdated: '2026-03-29T10:10:00Z' },
-    { layer: 'ANALYTICS', healthScore: 88, activeAlerts: 5, successRate: 80, lastUpdated: '2026-03-29T10:08:00Z' },
+    { layer: 'TRUSTED', healthScore: 95, activeAlerts: 17, successRate: 50, lastUpdated: '2026-03-29T10:10:00Z' },
+    { layer: 'ANALYTICS', healthScore: 88, activeAlerts: 4, successRate: 80, lastUpdated: '2026-03-29T10:08:00Z' },
   ],
 };
 
@@ -64,7 +64,10 @@ export const MOCK_ALERTS: Alert[] = [
   { id: 'ALT-001', title: 'Falha Crítica — Job ETL-047 (Ingestion)', description: 'Job de ingestão ETL-047 falhou após 3 tentativas. Arquivo FFT não foi copiado corretamente.', severity: 'CRITICAL', layer: 'INGESTION', area: 'Engineering', triggeredAt: '2026-03-29T07:58:10Z', status: 'ACKNOWLEDGED', triggerType: 'BATCH_FAILURE', affectedProcess: 'ETL-047 FFT Copy Job', suggestedAction: 'Reexecutar manualmente o job ETL-047 com validação de checksum.', acknowledgedAt: '2026-03-29T08:30:00Z' },
   { id: 'ALT-002', title: 'Inconsistência — Variável Endereço (Enriquecimento)', description: 'Taxa de inconsistência na variável de endereço atingiu 8.2% na camada de Ingestion.', severity: 'HIGH', layer: 'INGESTION', area: 'Retail', triggeredAt: '2026-03-29T08:45:00Z', status: 'OPEN', triggerType: 'THRESHOLD', affectedProcess: 'Enrichment Service — Endereço', suggestedAction: 'Investigar fonte de dados de enriquecimento de endereço. Validar API externa.' },
 
-  // ── DW / Trusted (12 alertas OPEN — bate com StageHealth DW activeAlerts:12) ──
+  // ── Governança (1 alerta OPEN — bate com StageHealth GOVERNANCA activeAlerts:1) ──
+  { id: 'ALT-023', title: 'Regra de governança violada — classificação PII', description: 'Coluna email detectada sem tag PII obrigatória em 3 tabelas da camada Governança.', severity: 'MEDIUM', layer: 'TRUSTED', area: 'Compliance', triggeredAt: '2026-03-29T08:20:00Z', status: 'OPEN', triggerType: 'THRESHOLD', affectedProcess: 'Governance Tag Validator', suggestedAction: 'Aplicar tags PII faltantes e revisar política de classificação.' },
+
+  // ── DW / Trusted (16 alertas OPEN — bate com StageHealth DW activeAlerts:16) ──
   { id: 'ALT-003', title: 'Latência Elevada — Trusted Layer (340ms)', description: 'Latência da camada Trusted atingiu 340ms, ultrapassando o limiar de 300ms definido.', severity: 'HIGH', layer: 'TRUSTED', area: 'Engineering', triggeredAt: '2026-03-29T09:12:00Z', status: 'OPEN', triggerType: 'LATENCY', affectedProcess: 'Trusted Data Validation Service', suggestedAction: 'Escalar capacidade do serviço de validação.' },
   { id: 'ALT-004', title: 'Job Atrasado — BATCH-092 (Trusted)', description: 'Job BATCH-092 está com 45 minutos de atraso em relação ao SLA definido.', severity: 'MEDIUM', layer: 'TRUSTED', area: 'Engineering', triggeredAt: '2026-03-29T05:15:00Z', status: 'OPEN', triggerType: 'BATCH_FAILURE', affectedProcess: 'BATCH-092 Trusted Sync', suggestedAction: 'Verificar dependências do job BATCH-092.' },
   { id: 'ALT-005', title: 'Completeness Check falhou — DW tabela financeiro', description: 'Teste de completude retornou 72% (limiar 95%) na tabela fact_financeiro.', severity: 'CRITICAL', layer: 'TRUSTED', area: 'Finance', triggeredAt: '2026-03-29T06:10:00Z', status: 'OPEN', triggerType: 'THRESHOLD', affectedProcess: 'DW Completeness Gate', suggestedAction: 'Verificar job de carga da tabela fact_financeiro.' },
@@ -77,12 +80,15 @@ export const MOCK_ALERTS: Alert[] = [
   { id: 'ALT-012', title: 'Referential integrity — FK cliente quebrada', description: '89 registros em fact_pedidos sem correspondência em dim_cliente.', severity: 'MEDIUM', layer: 'TRUSTED', area: 'Engineering', triggeredAt: '2026-03-29T09:15:00Z', status: 'OPEN', triggerType: 'THRESHOLD', affectedProcess: 'DW FK Checker', suggestedAction: 'Verificar carga de dim_cliente e reprocessar pedidos órfãos.' },
   { id: 'ALT-013', title: 'Quality gate barrada — camada DW', description: 'Gate de qualidade bloqueou promoção de 3 tabelas para Analytics por falha acumulada.', severity: 'MEDIUM', layer: 'TRUSTED', area: 'Engineering', triggeredAt: '2026-03-29T09:30:00Z', status: 'OPEN', triggerType: 'THRESHOLD', affectedProcess: 'DW Quality Gate', suggestedAction: 'Corrigir os 11 checks falhados e re-executar gate.' },
   { id: 'ALT-014', title: 'Partition missing — fact_financeiro 2026-03-28', description: 'Partição do dia 28/03 não encontrada na tabela fact_financeiro.', severity: 'HIGH', layer: 'TRUSTED', area: 'Finance', triggeredAt: '2026-03-29T09:45:00Z', status: 'OPEN', triggerType: 'THRESHOLD', affectedProcess: 'DW Partition Monitor', suggestedAction: 'Verificar job de carga da partição e reprocessar.' },
+  { id: 'ALT-024', title: 'Timeliness SLA — dim_canal 3h atrasado', description: 'Dimensão canal não foi atualizada nas últimas 3h. SLA é 1h.', severity: 'HIGH', layer: 'TRUSTED', area: 'Engineering', triggeredAt: '2026-03-29T10:00:00Z', status: 'OPEN', triggerType: 'LATENCY', affectedProcess: 'DW dim_canal Refresh', suggestedAction: 'Verificar job de carga da dim_canal.' },
+  { id: 'ALT-025', title: 'Row count anomaly — stg_clientes -60%', description: 'Volume de staging de clientes 60% abaixo do esperado.', severity: 'MEDIUM', layer: 'TRUSTED', area: 'Engineering', triggeredAt: '2026-03-29T10:10:00Z', status: 'OPEN', triggerType: 'ANOMALY', affectedProcess: 'DW Volume Monitor stg_clientes', suggestedAction: 'Verificar fonte CRM e job de extração.' },
+  { id: 'ALT-026', title: 'Null spike — fact_vendas.valor_liquido', description: 'Coluna valor_liquido com 8% de nulos no último batch (baseline < 0.1%).', severity: 'HIGH', layer: 'TRUSTED', area: 'Finance', triggeredAt: '2026-03-29T10:15:00Z', status: 'OPEN', triggerType: 'THRESHOLD', affectedProcess: 'DW Null Monitor', suggestedAction: 'Investigar transformação de valor_liquido no ETL.' },
+  { id: 'ALT-027', title: 'Constraint violation — dim_agencia.codigo duplicado', description: 'Encontrados 23 códigos de agência duplicados após merge incremental.', severity: 'MEDIUM', layer: 'TRUSTED', area: 'Engineering', triggeredAt: '2026-03-29T10:20:00Z', status: 'OPEN', triggerType: 'THRESHOLD', affectedProcess: 'DW Uniqueness Gate', suggestedAction: 'Executar dedup na dim_agencia e revisar regra de merge.' },
 
-  // ── Analytics (4 alertas OPEN — bate com StageHealth ANALYTICS activeAlerts:4) ──
+  // ── Analytics (3 alertas OPEN — bate com StageHealth ANALYTICS activeAlerts:3) ──
   { id: 'ALT-015', title: 'Score Zerado — Modelo MDL-003 (10.3%)', description: 'Percentual de score zerado atingiu o limiar crítico de 10% na base do modelo de Fraude Transacional.', severity: 'CRITICAL', layer: 'ANALYTICS', area: 'Risk', triggeredAt: '2026-03-29T08:14:22Z', status: 'OPEN', triggerType: 'SCORE_ZERO', affectedProcess: 'MDL-003 Score Engine', suggestedAction: 'Verificar processo ETL-047 e reprocessar arquivo FFT corrompido.', autoAction: 'Processo de alertas enviados para equipe de dados via mensageria.' },
   { id: 'ALT-016', title: 'Modelos sem Métricas — Analytics (900+)', description: 'Detectados 912 modelos analíticos sem métricas de monitoramento configuradas.', severity: 'MEDIUM', layer: 'ANALYTICS', area: 'Risk', triggeredAt: '2026-03-29T06:00:00Z', status: 'OPEN', triggerType: 'THRESHOLD', affectedProcess: 'Model Metrics Registry', suggestedAction: 'Mapear e configurar métricas para os 912 modelos não monitorados.' },
   { id: 'ALT-017', title: 'Feature drift — modelo MDL-001', description: 'Drift detectado na feature renda_mensal: distribuição deslocou 1.8 sigma.', severity: 'HIGH', layer: 'ANALYTICS', area: 'Risk', triggeredAt: '2026-03-29T09:02:00Z', status: 'OPEN', triggerType: 'ANOMALY', affectedProcess: 'MDL-001 Feature Monitor', suggestedAction: 'Acionar Data Science para avaliar retreino do modelo.' },
-  { id: 'ALT-018', title: 'Anomalia — Score PF Região Sul', description: 'Desvio padrão do Score PF detectado 2.3x acima do normal para a Região Sul.', severity: 'MEDIUM', layer: 'ANALYTICS', area: 'Finance', triggeredAt: '2026-03-29T10:01:00Z', status: 'OPEN', triggerType: 'ANOMALY', affectedProcess: 'MDL-005 Regional Score Engine', suggestedAction: 'Monitorar por 2h. Se persistir, acionar equipe de Data Science.' },
 
   // ── Delivery (0 alertas OPEN) ──
 

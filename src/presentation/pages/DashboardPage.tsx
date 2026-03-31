@@ -50,9 +50,9 @@ const STAGE_COLORS: Record<PipelineStage, string> = {
 
 const MOCK_STAGE_HEALTH: StageHealth[] = [
   { stage: 'INGESTAO', label: 'Ingestão', owner: 'Caio', healthScore: 94.2, activeAlerts: 2, qualityChecks: 18, qualityPassing: 16, lastUpdated: '2026-03-29T10:15:00Z' },
-  { stage: 'GOVERNANCA', label: 'Governança', owner: 'Diego', healthScore: 97.8, activeAlerts: 0, qualityChecks: 24, qualityPassing: 23, lastUpdated: '2026-03-29T10:12:00Z' },
-  { stage: 'DW', label: 'Data Warehouse', owner: 'Shimada', healthScore: 91.5, activeAlerts: 12, qualityChecks: 32, qualityPassing: 16, lastUpdated: '2026-03-29T10:10:00Z' },
-  { stage: 'ANALYTICS_STAGE', label: 'Analytics', owner: 'Shimada', healthScore: 88.3, activeAlerts: 4, qualityChecks: 15, qualityPassing: 12, lastUpdated: '2026-03-29T10:08:00Z' },
+  { stage: 'GOVERNANCA', label: 'Governança', owner: 'Diego', healthScore: 97.8, activeAlerts: 1, qualityChecks: 24, qualityPassing: 23, lastUpdated: '2026-03-29T10:12:00Z' },
+  { stage: 'DW', label: 'Data Warehouse', owner: 'Shimada', healthScore: 91.5, activeAlerts: 16, qualityChecks: 32, qualityPassing: 16, lastUpdated: '2026-03-29T10:10:00Z' },
+  { stage: 'ANALYTICS_STAGE', label: 'Analytics', owner: 'Shimada', healthScore: 88.3, activeAlerts: 3, qualityChecks: 15, qualityPassing: 12, lastUpdated: '2026-03-29T10:08:00Z' },
   { stage: 'DELIVERY', label: 'Delivery', owner: 'Caio', healthScore: 99.1, activeAlerts: 0, qualityChecks: 8, qualityPassing: 8, lastUpdated: '2026-03-29T10:14:00Z' },
   { stage: 'PRODUTOS', label: 'Produtos', owner: 'Diego', healthScore: 96.5, activeAlerts: 1, qualityChecks: 12, qualityPassing: 11, lastUpdated: '2026-03-29T10:13:00Z' },
 ];
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                     cursor: 'pointer',
                     transition: 'box-shadow 0.2s, transform 0.15s',
                     '&:hover': { boxShadow: 4, transform: 'translateY(-2px)' },
-                  }} onClick={() => navigate(`/alerts?stage=${stage.stage}`)}>
+                  }} onClick={() => navigate(`/alerts?stage=${stage.stage}&tab=1`)}>
                     <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
                         <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color, boxShadow: `0 0 6px ${color}88` }} />

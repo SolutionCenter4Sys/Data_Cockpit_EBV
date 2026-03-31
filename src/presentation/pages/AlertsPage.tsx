@@ -216,7 +216,8 @@ export default function AlertsPage() {
   const theme = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const { alerts, loading } = useAppSelector((s) => s.alerts);
-  const [tab, setTab] = useState(0);
+  const tabParam = searchParams.get('tab');
+  const [tab, setTab] = useState(tabParam ? Number(tabParam) : 0);
   const [notificationLog, setNotificationLog] = useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const qualityTests = useAppSelector((s) => s.dataQuality.tests);
@@ -240,7 +241,8 @@ export default function AlertsPage() {
 
   useEffect(() => {
     if (stageParam) setStageFilter(stageParam);
-  }, [stageParam]);
+    if (tabParam) setTab(Number(tabParam));
+  }, [stageParam, tabParam]);
 
   const handleStageFilter = (stage: PipelineStage | ''): void => {
     setStageFilter(stage);
