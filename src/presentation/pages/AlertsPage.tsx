@@ -54,13 +54,13 @@ const LAYER_LABELS: Record<string, string> = {
   INGESTION: 'Ingestão', TRUSTED: 'Trusted', ANALYTICS: 'Analytics',
 };
 
-const STAGE_FILTER_OPTIONS: { key: PipelineStage; label: string; color: string; layers: DataLayer[] }[] = [
-  { key: 'INGESTAO', label: 'Ingestão', color: '#1565C0', layers: ['INGESTION'] },
-  { key: 'GOVERNANCA', label: 'Governança', color: '#6A1B9A', layers: ['TRUSTED'] },
-  { key: 'DW', label: 'Data Warehouse', color: '#00695C', layers: ['TRUSTED'] },
-  { key: 'ANALYTICS_STAGE', label: 'Analytics', color: '#E65100', layers: ['ANALYTICS'] },
-  { key: 'DELIVERY', label: 'Delivery', color: '#283593', layers: ['INGESTION', 'TRUSTED', 'ANALYTICS'] },
-  { key: 'PRODUTOS', label: 'Produtos', color: '#AD1457', layers: ['ANALYTICS'] },
+const STAGE_FILTER_OPTIONS: { key: PipelineStage; label: string; color: string }[] = [
+  { key: 'INGESTAO', label: 'Ingestão', color: '#1565C0' },
+  { key: 'GOVERNANCA', label: 'Governança', color: '#6A1B9A' },
+  { key: 'DW', label: 'Data Warehouse', color: '#00695C' },
+  { key: 'ANALYTICS_STAGE', label: 'Analytics', color: '#E65100' },
+  { key: 'DELIVERY', label: 'Delivery', color: '#283593' },
+  { key: 'PRODUTOS', label: 'Produtos', color: '#AD1457' },
 ];
 
 const SEVERITY_PRIORITY: Record<SeverityLevel, number> = {
@@ -255,9 +255,7 @@ export default function AlertsPage() {
 
   const stageFilteredAlerts = useMemo(() => {
     if (!stageFilter) return alerts;
-    const opt = STAGE_FILTER_OPTIONS.find((s) => s.key === stageFilter);
-    if (!opt) return alerts;
-    return alerts.filter((a) => opt.layers.includes(a.layer));
+    return alerts.filter((a) => a.stage === stageFilter);
   }, [alerts, stageFilter]);
 
   const openAlerts = stageFilteredAlerts.filter((a) => a.status === 'OPEN');
@@ -326,12 +324,20 @@ export default function AlertsPage() {
     'BigQuery Analytics': 'ANALYTICS',
   };
 
+  const TEST_STAGE_MAP: Record<string, PipelineStage> = {
+    'EBV Core Database': 'INGESTAO',
+    'Oracle Legado': 'INGESTAO',
+    'Kafka Events Stream': 'INGESTAO',
+    'BigQuery Analytics': 'ANALYTICS_STAGE',
+  };
+
   const handleCreateAlert = () => {
     if (!draft.title.trim()) return;
     const selectedTest = qualityTests.find((t) => t.id === draft.qualityTestId);
     const layer: DataLayer = selectedTest ? (TEST_LAYER_MAP[selectedTest.sourceName] ?? 'TRUSTED') : 'INGESTION';
+    const stage: PipelineStage = selectedTest ? (TEST_STAGE_MAP[selectedTest.sourceName] ?? 'DW') : 'INGESTAO';
     const { qualityTestId: _, ...rest } = draft;
-    dispatch(createAlert({ ...rest, layer }));
+    dispatch(createAlert({ ...rest, layer, stage }));
     setDialogOpen(false);
     resetDraft();
   };

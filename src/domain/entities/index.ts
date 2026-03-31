@@ -146,6 +146,7 @@ export interface Alert {
   description: string;
   severity: SeverityLevel;
   layer: DataLayer;
+  stage: PipelineStage;
   area?: string;
   triggeredAt: string;
   acknowledgedAt?: string;
