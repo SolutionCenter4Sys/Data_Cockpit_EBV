@@ -49,12 +49,12 @@ const STAGE_COLORS: Record<PipelineStage, string> = {
 };
 
 const MOCK_STAGE_HEALTH: StageHealth[] = [
-  { stage: 'INGESTAO', label: 'Ingestão', owner: 'Caio', healthScore: 94.2, activeAlerts: 2, totalDataAnalyzed: 2_400_000, qualityChecks: 18, qualityPassing: 16, lastUpdated: '2026-03-29T10:15:00Z' },
-  { stage: 'GOVERNANCA', label: 'Governança', owner: 'Diego', healthScore: 97.8, activeAlerts: 0, totalDataAnalyzed: 1_850_000, qualityChecks: 24, qualityPassing: 23, lastUpdated: '2026-03-29T10:12:00Z' },
-  { stage: 'DW', label: 'Data Warehouse', owner: 'Shimada', healthScore: 91.5, activeAlerts: 12, totalDataAnalyzed: 4_200_000, qualityChecks: 32, qualityPassing: 16, lastUpdated: '2026-03-29T10:10:00Z' },
-  { stage: 'ANALYTICS_STAGE', label: 'Analytics', owner: 'Shimada', healthScore: 88.3, activeAlerts: 4, totalDataAnalyzed: 980_000, qualityChecks: 15, qualityPassing: 12, lastUpdated: '2026-03-29T10:08:00Z' },
-  { stage: 'DELIVERY', label: 'Delivery', owner: 'Caio', healthScore: 99.1, activeAlerts: 0, totalDataAnalyzed: 620_000, qualityChecks: 8, qualityPassing: 8, lastUpdated: '2026-03-29T10:14:00Z' },
-  { stage: 'PRODUTOS', label: 'Produtos', owner: 'Diego', healthScore: 96.5, activeAlerts: 1, totalDataAnalyzed: 310_000, qualityChecks: 12, qualityPassing: 11, lastUpdated: '2026-03-29T10:13:00Z' },
+  { stage: 'INGESTAO', label: 'Ingestão', owner: 'Caio', healthScore: 94.2, activeAlerts: 2, qualityChecks: 18, qualityPassing: 16, lastUpdated: '2026-03-29T10:15:00Z' },
+  { stage: 'GOVERNANCA', label: 'Governança', owner: 'Diego', healthScore: 97.8, activeAlerts: 0, qualityChecks: 24, qualityPassing: 23, lastUpdated: '2026-03-29T10:12:00Z' },
+  { stage: 'DW', label: 'Data Warehouse', owner: 'Shimada', healthScore: 91.5, activeAlerts: 12, qualityChecks: 32, qualityPassing: 16, lastUpdated: '2026-03-29T10:10:00Z' },
+  { stage: 'ANALYTICS_STAGE', label: 'Analytics', owner: 'Shimada', healthScore: 88.3, activeAlerts: 4, qualityChecks: 15, qualityPassing: 12, lastUpdated: '2026-03-29T10:08:00Z' },
+  { stage: 'DELIVERY', label: 'Delivery', owner: 'Caio', healthScore: 99.1, activeAlerts: 0, qualityChecks: 8, qualityPassing: 8, lastUpdated: '2026-03-29T10:14:00Z' },
+  { stage: 'PRODUTOS', label: 'Produtos', owner: 'Diego', healthScore: 96.5, activeAlerts: 1, qualityChecks: 12, qualityPassing: 11, lastUpdated: '2026-03-29T10:13:00Z' },
 ];
 
 
@@ -215,7 +215,6 @@ export default function DashboardPage() {
             {filteredStages.map((stage) => {
               const color = STAGE_COLORS[stage.stage];
               const passRate = stage.qualityChecks > 0 ? Math.round((stage.qualityPassing / stage.qualityChecks) * 100) : 0;
-              const analyzedFmt = stage.totalDataAnalyzed.toLocaleString('pt-BR');
               return (
                 <Grid item xs={12} sm={6} md={4} lg={2} key={stage.stage}>
                   <Card variant="outlined" sx={{
@@ -248,7 +247,7 @@ export default function DashboardPage() {
                             {stage.activeAlerts}
                           </span>
                           {' / '}
-                          {analyzedFmt}
+                          {stage.qualityChecks} testes
                         </Typography>
                         <Typography variant="caption" sx={{ color: theme.palette.text.disabled, whiteSpace: 'nowrap', flexShrink: 0, fontSize: '0.65rem' }}>
                           | {stage.healthScore}%
