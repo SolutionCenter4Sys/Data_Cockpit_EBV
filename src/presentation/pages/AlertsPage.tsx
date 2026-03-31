@@ -25,6 +25,12 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
 } from '@mui/material';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -32,8 +38,9 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FlagCircleOutlinedIcon from '@mui/icons-material/FlagCircleOutlined';
+import AddAlertIcon from '@mui/icons-material/AddAlert';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { fetchAlerts, acknowledgeAlert, resolveAlert } from '../../app/slices/alertSlice';
+import { fetchAlerts, acknowledgeAlert, resolveAlert, createAlert } from '../../app/slices/alertSlice';
 import SeverityChip from '../components/SeverityChip';
 import PageSkeleton from '../components/PageSkeleton';
 import type { Alert, PipelineStage, SeverityLevel, DataLayer } from '../../domain/entities';
@@ -210,6 +217,16 @@ export default function AlertsPage() {
   const { alerts, loading } = useAppSelector((s) => s.alerts);
   const [tab, setTab] = useState(0);
   const [notificationLog, setNotificationLog] = useState<string[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [draft, setDraft] = useState({
+    title: '',
+    description: '',
+    severity: 'MEDIUM' as Alert['severity'],
+    layer: 'INGESTION' as Alert['layer'],
+    triggerType: 'THRESHOLD' as Alert['triggerType'],
+    affectedProcess: '',
+    suggestedAction: '',
+  });
 
   const stageParam = searchParams.get('stage') as PipelineStage | null;
   const [stageFilter, setStageFilter] = useState<PipelineStage | ''>(stageParam ?? '');
@@ -292,6 +309,18 @@ export default function AlertsPage() {
     setNotificationLog((current) => [message, ...current].slice(0, 8));
   };
 
+  const resetDraft = () => setDraft({
+    title: '', description: '', severity: 'MEDIUM', layer: 'INGESTION',
+    triggerType: 'THRESHOLD', affectedProcess: '', suggestedAction: '',
+  });
+
+  const handleCreateAlert = () => {
+    if (!draft.title.trim()) return;
+    dispatch(createAlert(draft));
+    setDialogOpen(false);
+    resetDraft();
+  };
+
   return (
     <Box>
       {criticalAlerts.length > 0 && (
@@ -347,6 +376,15 @@ export default function AlertsPage() {
                 }}
               />
             ))}
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddAlertIcon />}
+              onClick={() => setDialogOpen(true)}
+              sx={{ ml: 'auto', fontSize: '0.75rem', textTransform: 'none' }}
+            >
+              Adicionar Alerta
+            </Button>
           </Stack>
         </CardContent>
       </Card>
@@ -483,6 +521,43 @@ export default function AlertsPage() {
         </Grid>
       </Grid>
 
+      <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); resetDraft(); }} maxWidth="sm" fullWidth>
+        <DialogTitle>Adicionar Alerta</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
+          <TextField label="Título" size="small" required value={draft.title}
+            onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
+          <TextField label="Descrição" size="small" multiline rows={2} value={draft.description}
+            onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />
+          <TextField label="Severidade" size="small" select value={draft.severity}
+            onChange={(e) => setDraft((d) => ({ ...d, severity: e.target.value as Alert['severity'] }))}>
+            {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const).map((s) => (
+              <MenuItem key={s} value={s}>{s}</MenuItem>
+            ))}
+          </TextField>
+          <TextField label="Camada" size="small" select value={draft.layer}
+            onChange={(e) => setDraft((d) => ({ ...d, layer: e.target.value as Alert['layer'] }))}>
+            {(['INGESTION', 'TRUSTED', 'ANALYTICS'] as const).map((l) => (
+              <MenuItem key={l} value={l}>{LAYER_LABELS[l]}</MenuItem>
+            ))}
+          </TextField>
+          <TextField label="Tipo de disparo" size="small" select value={draft.triggerType}
+            onChange={(e) => setDraft((d) => ({ ...d, triggerType: e.target.value as Alert['triggerType'] }))}>
+            {(['THRESHOLD', 'ANOMALY', 'BATCH_FAILURE', 'SCORE_ZERO', 'LATENCY'] as const).map((t) => (
+              <MenuItem key={t} value={t}>{t}</MenuItem>
+            ))}
+          </TextField>
+          <TextField label="Processo afetado" size="small" value={draft.affectedProcess}
+            onChange={(e) => setDraft((d) => ({ ...d, affectedProcess: e.target.value }))} />
+          <TextField label="Ação sugerida" size="small" value={draft.suggestedAction}
+            onChange={(e) => setDraft((d) => ({ ...d, suggestedAction: e.target.value }))} />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => { setDialogOpen(false); resetDraft(); }}>Cancelar</Button>
+          <Button variant="contained" disabled={!draft.title.trim()} onClick={handleCreateAlert}>
+            Criar Alerta
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -35,4 +35,16 @@ export class MockAlertRepository implements IAlertRepository {
     const updated = alertsState.find((a) => a.id === id)!;
     return { data: updated, success: true, timestamp: new Date().toISOString() };
   }
+
+  async createAlert(draft: Omit<Alert, 'id' | 'status' | 'triggeredAt'>): Promise<ApiResponse<Alert>> {
+    await delay(400);
+    const newAlert: Alert = {
+      ...draft,
+      id: `ALERT-${Date.now()}`,
+      status: 'OPEN',
+      triggeredAt: new Date().toISOString(),
+    };
+    alertsState = [newAlert, ...alertsState];
+    return { data: newAlert, success: true, timestamp: new Date().toISOString() };
+  }
 }

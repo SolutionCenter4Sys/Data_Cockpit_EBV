@@ -27,7 +27,7 @@ import ConselheiroPage from "./presentation/pages/ConselheiroPage";
 import ComunicadorPage from "./presentation/pages/ComunicadorPage";
 import ParkingLotPage from "./presentation/pages/ParkingLotPage";
 import DiscoveryPage from "./presentation/pages/DiscoveryPage";
-import ObservabilityPage from "./presentation/pages/ObservabilityPage";
+
 
 export default function App() {
   return (
@@ -38,7 +38,6 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/discovery" element={<DiscoveryPage />} />
         <Route path="/lineage" element={<LineagePage />} />
-        <Route path="/observability" element={<ObservabilityPage />} />
         <Route path="/data-quality" element={<DataQualityPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/action-matrix" element={<ActionMatrixPage />} />

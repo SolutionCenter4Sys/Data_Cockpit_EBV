@@ -7,7 +7,7 @@ import {
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import SearchIcon from "@mui/icons-material/Search";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
@@ -38,7 +38,6 @@ const jornadaDadoItems = [
   { path:"/dashboard",      label:"Dashboard Executivo",   icon:<DashboardIcon fontSize="small" />,       isNew: true },
   { path:"/discovery",      label:"Discovery",             icon:<SearchIcon fontSize="small" />,           isNew: true },
   { path:"/lineage",        label:"Linhagem de Dados",     icon:<AccountTreeIcon fontSize="small" />,      isNew: true },
-  { path:"/observability",  label:"Observabilidade",       icon:<VisibilityIcon fontSize="small" />,       isNew: true },
   { path:"/data-quality",   label:"Qualidade de Dados",    icon:<FactCheckIcon fontSize="small" />,        isNew: true },
   { path:"/alerts",         label:"Observabilidade",       icon:<NotificationsActiveIcon fontSize="small" />, badge:true, isNew: true },
   { path:"/action-matrix",  label:"Central de Alertas",    icon:<PlaylistAddCheckIcon fontSize="small" />, isNew: true },

@@ -24,6 +24,14 @@ export const resolveAlert = createAsyncThunk('alerts/resolve', async (id: string
   return r.data;
 });
 
+export const createAlert = createAsyncThunk(
+  'alerts/create',
+  async (draft: Omit<Alert, 'id' | 'status' | 'triggeredAt'>) => {
+    const r = await repo.createAlert(draft);
+    return r.data;
+  },
+);
+
 interface AlertState {
   alerts: Alert[];
   rules: AlertRule[];
@@ -53,6 +61,9 @@ const alertSlice = createSlice({
       .addCase(resolveAlert.fulfilled, (state, action) => {
         state.actionLoading = null;
         state.alerts = state.alerts.map((a) => a.id === action.payload.id ? action.payload : a);
+      })
+      .addCase(createAlert.fulfilled, (state, action) => {
+        state.alerts = [action.payload, ...state.alerts];
       });
   },
 });
