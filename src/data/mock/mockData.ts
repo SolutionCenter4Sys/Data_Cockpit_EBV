@@ -14,8 +14,8 @@ import type {
 
 export const MOCK_DASHBOARD_SUMMARY: DashboardSummary = {
   overallHealth: 74,
-  activeAlerts: 22,
-  criticalAlerts: 2,
+  activeAlerts: 19,
+  criticalAlerts: 3,
   lastRefreshed: new Date().toISOString(),
   kpis: [
     { label: 'Score Zerado', value: 7.4, unit: '%', trend: 'DOWN', trendValue: '-2.1%', severity: 'HIGH', icon: 'TrendingDown' },
@@ -26,7 +26,7 @@ export const MOCK_DASHBOARD_SUMMARY: DashboardSummary = {
   layerHealth: [
     { layer: 'INGESTION', healthScore: 94, activeAlerts: 2, successRate: 89, lastUpdated: '2026-03-29T10:15:00Z' },
     { layer: 'TRUSTED', healthScore: 95, activeAlerts: 12, successRate: 50, lastUpdated: '2026-03-29T10:10:00Z' },
-    { layer: 'ANALYTICS', healthScore: 88, activeAlerts: 4, successRate: 80, lastUpdated: '2026-03-29T10:08:00Z' },
+    { layer: 'ANALYTICS', healthScore: 88, activeAlerts: 5, successRate: 80, lastUpdated: '2026-03-29T10:08:00Z' },
   ],
 };
 
