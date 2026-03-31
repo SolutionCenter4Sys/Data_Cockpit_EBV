@@ -73,11 +73,14 @@ export default function ActionMatrixPage() {
 
   useEffect(() => {
     const state = location.state as {
-      fromQuality?: boolean; testName?: string; tableName?: string;
+      fromQuality?: boolean; openDialog?: boolean;
+      testName?: string; tableName?: string;
       columnName?: string; failureReason?: string; lastResult?: string;
     } | null;
-    if (state?.fromQuality && !processedNavState.current) {
-      processedNavState.current = true;
+    if (!state || processedNavState.current) return;
+    processedNavState.current = true;
+
+    if (state.fromQuality) {
       const severity = state.lastResult === "FAIL" ? "high" : "medium";
       setEditingRule(null);
       setForm({
@@ -91,8 +94,13 @@ export default function ActionMatrixPage() {
         action: "notify",
       });
       setDialogOpen(true);
-      navigate(location.pathname, { replace: true, state: null });
+    } else if (state.openDialog) {
+      setEditingRule(null);
+      setForm(EMPTY_FORM);
+      setDialogOpen(true);
     }
+
+    navigate(location.pathname, { replace: true, state: null });
   }, [location.state, navigate, location.pathname]);
 
   const openCreate = () => { setEditingRule(null); setForm(EMPTY_FORM); setDialogOpen(true); };

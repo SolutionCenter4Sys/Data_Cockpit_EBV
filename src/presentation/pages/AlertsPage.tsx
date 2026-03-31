@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Grid,
@@ -25,12 +25,6 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
 } from '@mui/material';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -40,11 +34,10 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FlagCircleOutlinedIcon from '@mui/icons-material/FlagCircleOutlined';
 import AddAlertIcon from '@mui/icons-material/AddAlert';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { fetchAlerts, acknowledgeAlert, resolveAlert, createAlert } from '../../app/slices/alertSlice';
-import { fetchTests } from '../../app/slices/dataQualitySlice';
+import { fetchAlerts, acknowledgeAlert, resolveAlert } from '../../app/slices/alertSlice';
 import SeverityChip from '../components/SeverityChip';
 import PageSkeleton from '../components/PageSkeleton';
-import type { Alert, PipelineStage, SeverityLevel, DataLayer } from '../../domain/entities';
+import type { Alert, PipelineStage, SeverityLevel } from '../../domain/entities';
 
 const STATUS_TABS = ['Todos', 'Abertos', 'Reconhecidos', 'Resolvidos'];
 const STATUS_MAP: Record<number, Alert['status'] | undefined> = {
@@ -214,29 +207,18 @@ function AlertRow({
 export default function AlertsPage() {
   const dispatch = useAppDispatch();
   const theme = useTheme();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { alerts, loading } = useAppSelector((s) => s.alerts);
   const tabParam = searchParams.get('tab');
   const [tab, setTab] = useState(tabParam ? Number(tabParam) : 0);
   const [notificationLog, setNotificationLog] = useState<string[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const qualityTests = useAppSelector((s) => s.dataQuality.tests);
-  const [draft, setDraft] = useState({
-    title: '',
-    description: '',
-    severity: 'MEDIUM' as Alert['severity'],
-    qualityTestId: '',
-    triggerType: 'THRESHOLD' as Alert['triggerType'],
-    affectedProcess: '',
-    suggestedAction: '',
-  });
 
   const stageParam = searchParams.get('stage') as PipelineStage | null;
   const [stageFilter, setStageFilter] = useState<PipelineStage | ''>(stageParam ?? '');
 
   useEffect(() => {
     dispatch(fetchAlerts());
-    dispatch(fetchTests());
   }, [dispatch]);
 
   useEffect(() => {
@@ -312,36 +294,6 @@ export default function AlertsPage() {
     setNotificationLog((current) => [message, ...current].slice(0, 8));
   };
 
-  const resetDraft = () => setDraft({
-    title: '', description: '', severity: 'MEDIUM', qualityTestId: '',
-    triggerType: 'THRESHOLD', affectedProcess: '', suggestedAction: '',
-  });
-
-  const TEST_LAYER_MAP: Record<string, DataLayer> = {
-    'EBV Core Database': 'INGESTION',
-    'Oracle Legado': 'INGESTION',
-    'Kafka Events Stream': 'INGESTION',
-    'BigQuery Analytics': 'ANALYTICS',
-  };
-
-  const TEST_STAGE_MAP: Record<string, PipelineStage> = {
-    'EBV Core Database': 'INGESTAO',
-    'Oracle Legado': 'INGESTAO',
-    'Kafka Events Stream': 'INGESTAO',
-    'BigQuery Analytics': 'ANALYTICS_STAGE',
-  };
-
-  const handleCreateAlert = () => {
-    if (!draft.title.trim()) return;
-    const selectedTest = qualityTests.find((t) => t.id === draft.qualityTestId);
-    const layer: DataLayer = selectedTest ? (TEST_LAYER_MAP[selectedTest.sourceName] ?? 'TRUSTED') : 'INGESTION';
-    const stage: PipelineStage = selectedTest ? (TEST_STAGE_MAP[selectedTest.sourceName] ?? 'DW') : 'INGESTAO';
-    const { qualityTestId: _, ...rest } = draft;
-    dispatch(createAlert({ ...rest, layer, stage }));
-    setDialogOpen(false);
-    resetDraft();
-  };
-
   return (
     <Box>
       {criticalAlerts.length > 0 && (
@@ -401,7 +353,7 @@ export default function AlertsPage() {
               variant="contained"
               size="small"
               startIcon={<AddAlertIcon />}
-              onClick={() => setDialogOpen(true)}
+              onClick={() => navigate('/action-matrix', { state: { openDialog: true } })}
               sx={{ ml: 'auto', fontSize: '0.75rem', textTransform: 'none' }}
             >
               Adicionar Alerta
@@ -542,45 +494,6 @@ export default function AlertsPage() {
         </Grid>
       </Grid>
 
-      <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); resetDraft(); }} maxWidth="sm" fullWidth>
-        <DialogTitle>Adicionar Alerta</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
-          <TextField label="Título" size="small" required value={draft.title}
-            onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
-          <TextField label="Descrição" size="small" multiline rows={2} value={draft.description}
-            onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} />
-          <TextField label="Severidade" size="small" select value={draft.severity}
-            onChange={(e) => setDraft((d) => ({ ...d, severity: e.target.value as Alert['severity'] }))}>
-            {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const).map((s) => (
-              <MenuItem key={s} value={s}>{s}</MenuItem>
-            ))}
-          </TextField>
-          <TextField label="Caso de Teste" size="small" select value={draft.qualityTestId}
-            onChange={(e) => setDraft((d) => ({ ...d, qualityTestId: e.target.value }))}>
-            {qualityTests.map((t) => (
-              <MenuItem key={t.id} value={t.id}>
-                {t.name} — {t.tableName}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField label="Tipo de disparo" size="small" select value={draft.triggerType}
-            onChange={(e) => setDraft((d) => ({ ...d, triggerType: e.target.value as Alert['triggerType'] }))}>
-            {(['THRESHOLD', 'ANOMALY', 'BATCH_FAILURE', 'SCORE_ZERO', 'LATENCY'] as const).map((t) => (
-              <MenuItem key={t} value={t}>{t}</MenuItem>
-            ))}
-          </TextField>
-          <TextField label="Processo afetado" size="small" value={draft.affectedProcess}
-            onChange={(e) => setDraft((d) => ({ ...d, affectedProcess: e.target.value }))} />
-          <TextField label="Ação sugerida" size="small" value={draft.suggestedAction}
-            onChange={(e) => setDraft((d) => ({ ...d, suggestedAction: e.target.value }))} />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => { setDialogOpen(false); resetDraft(); }}>Cancelar</Button>
-          <Button variant="contained" disabled={!draft.title.trim()} onClick={handleCreateAlert}>
-            Criar Alerta
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }
