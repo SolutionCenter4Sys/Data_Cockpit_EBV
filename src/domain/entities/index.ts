@@ -73,6 +73,7 @@ export interface TreeNode {
   id: string;
   label: string;
   count: number;
+  tag?: string;
   children?: TreeNode[];
 }
 

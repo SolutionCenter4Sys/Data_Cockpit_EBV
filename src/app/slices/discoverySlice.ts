@@ -204,7 +204,7 @@ const allArtifacts: DiscoveryResult[] = [
     path: "connectors / postgresql / ebv_core",
     owners: [{ name: "Diego", avatarColor: "#1565C0" }],
     tier: "Tier1", healthStatus: "healthy",
-    tags: ["PostgreSQL", "Core"],
+    tags: ["PostgreSQL", "Core", "Fase 1"],
     glossaryTerms: [],
     stats: { queries: 0, columns: 0, incidents: 0, tests: 0 },
     lineage: { upstreamCount: 0, downstreamCount: 8 },
@@ -218,7 +218,7 @@ const allArtifacts: DiscoveryResult[] = [
     path: "connectors / bigquery / analytics",
     owners: [{ name: "Shimada", avatarColor: "#E65100" }],
     tier: "Tier2", healthStatus: "healthy",
-    tags: ["BigQuery", "Analytics", "GCP"],
+    tags: ["BigQuery", "Analytics", "GCP", "Fase 1"],
     glossaryTerms: [],
     stats: { queries: 0, columns: 0, incidents: 0, tests: 0 },
     lineage: { upstreamCount: 0, downstreamCount: 5 },
@@ -311,8 +311,8 @@ export const TREE_CATEGORIES: TreeCategory[] = [
   {
     id: "connectors", label: "Conectores", icon: "cable",
     children: [
-      { id: "conn-pg", label: "PostgreSQL", count: 1 },
-      { id: "conn-bq", label: "BigQuery", count: 1 },
+      { id: "conn-pg", label: "PostgreSQL", count: 1, tag: "Fase 1" },
+      { id: "conn-bq", label: "BigQuery", count: 1, tag: "Fase 1" },
     ],
   },
   {

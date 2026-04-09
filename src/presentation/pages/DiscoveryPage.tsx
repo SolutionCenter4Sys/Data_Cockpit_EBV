@@ -126,6 +126,11 @@ function TreeNodeItem({ node, depth, onSelect, activeId }: {
               <Typography variant="caption" sx={{ color: theme.palette.text.disabled, fontSize: "0.65rem" }}>
                 ({node.count})
               </Typography>
+              {node.tag && (
+                <Chip label={node.tag} size="small"
+                  sx={{ height: 16, fontSize: "0.55rem", fontWeight: 700, bgcolor: theme.palette.primary.main, color: "#fff" }}
+                />
+              )}
             </Stack>
           }
         />
