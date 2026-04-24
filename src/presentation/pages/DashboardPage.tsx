@@ -53,8 +53,8 @@ const MOCK_STAGE_HEALTH: StageHealth[] = [
   { stage: 'GOVERNANCA', label: 'Governança', owner: 'Diego', healthScore: 97.8, activeAlerts: 1, qualityChecks: 24, qualityPassing: 23, lastUpdated: '2026-03-29T10:12:00Z' },
   { stage: 'DW', label: 'Data Warehouse', owner: 'Shimada', healthScore: 91.5, activeAlerts: 16, qualityChecks: 32, qualityPassing: 16, lastUpdated: '2026-03-29T10:10:00Z' },
   { stage: 'ANALYTICS_STAGE', label: 'Analytics', owner: 'Shimada', healthScore: 88.3, activeAlerts: 3, qualityChecks: 15, qualityPassing: 12, lastUpdated: '2026-03-29T10:08:00Z' },
-  { stage: 'DELIVERY', label: 'Delivery', owner: 'Caio', healthScore: 99.1, activeAlerts: 0, qualityChecks: 8, qualityPassing: 8, lastUpdated: '2026-03-29T10:14:00Z' },
   { stage: 'PRODUTOS', label: 'Produtos', owner: 'Diego', healthScore: 96.5, activeAlerts: 1, qualityChecks: 12, qualityPassing: 11, lastUpdated: '2026-03-29T10:13:00Z' },
+  { stage: 'DELIVERY', label: 'Delivery', owner: 'Caio', healthScore: 99.1, activeAlerts: 0, qualityChecks: 8, qualityPassing: 8, lastUpdated: '2026-03-29T10:14:00Z' },
 ];
 
 
@@ -209,7 +209,7 @@ export default function DashboardPage() {
         <CardContent sx={{ p: 2.5 }}>
           <Typography variant="h6" sx={{ mb: 0.5 }}>Saúde por Área da Esteira</Typography>
           <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 2 }}>
-            Ingestão → Governança → DW → Analytics → Delivery → Produtos
+            Ingestão → Governança → DW → Analytics → Produtos → Delivery
           </Typography>
           <Grid container spacing={2}>
             {filteredStages.map((stage) => {

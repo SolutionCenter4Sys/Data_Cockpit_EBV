@@ -8,7 +8,7 @@ import { fetchDashboard } from '../../app/slices/dashboardSlice';
 import { fetchAlerts } from '../../app/slices/alertSlice';
 
 const PAGE_META: Record<string, { title: string; subtitle: string }> = {
-  '/dashboard': { title: 'Dashboard Executivo', subtitle: 'Visão consolidada de saúde por área da esteira: Ingestão, Governança, DW, Analytics, Delivery, Produtos' },
+  '/dashboard': { title: 'Dashboard Executivo', subtitle: 'Visão consolidada de saúde por área da esteira: Ingestão, Governança, DW, Analytics, Produtos, Delivery' },
   '/discovery': { title: 'Discovery', subtitle: 'Exploração de ativos de dados com navegação hierárquica, filtros avançados e detalhamento inline — padrão OpenMetadata' },
   '/lineage': { title: 'Linhagem de Dados', subtitle: 'Mapa visual end-to-end do dado: Fontes → Ingestão → Governança → DW → Analytics → Delivery → Produtos' },
   '/data-quality': { title: 'Qualidade de Dados', subtitle: 'Testes de qualidade com conectores, incidentes enviados para ServiceNow' },
